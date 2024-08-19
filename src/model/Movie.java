@@ -1,8 +1,5 @@
 package model;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import util.ParseUtil;
 
 public class Movie {

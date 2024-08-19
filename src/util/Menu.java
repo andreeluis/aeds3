@@ -20,7 +20,10 @@ public class Menu {
     // mostra as opções disponiveis
     System.out.println("| Gerenciador de filmes\n|");
     System.out.println("|   1 - Carregar filmes de um .csv");
-    System.out.println("|   2 - Ver filmes");
+    System.out.println("|   2 - Visualizar filme");
+    System.out.println("|   3 - Atualizar filme");
+    System.out.println("|   4 - Excluir filme");
+
     System.out.println("|   0 - Sair");
 
     System.out.print("| Selecione a opção desejada: ");
@@ -38,6 +41,13 @@ public class Menu {
         readFromCSV();
         break;
       case 2:
+
+        break;
+      case 3:
+
+        break;
+      case 4:
+
         break;
       default:
         menu();
@@ -65,6 +75,7 @@ public class Menu {
         Movie movie = new Movie(csvScanner.nextLine());
 
         // Escrita (TODO)
+
       }
 
       csvScanner.close();
