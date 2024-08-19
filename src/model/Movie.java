@@ -3,6 +3,7 @@ package model;
 import util.ParseUtil;
 
 public class Movie {
+  private int id;
   private String posterLink;
   private String seriesTitle;
   private int releasedYear;
@@ -19,10 +20,15 @@ public class Movie {
   private String star4;
   private int numberOfVotes;
   private int gross;
+  public static int lastId;
 
-  public Movie() { }
+  public Movie() {
+    this.id = ++lastId;
+  }
 
   public Movie(String posterLink, String seriesTitle, int releasedYear, String certificate, String runtime, String[] genre, float imdbRating, String overview, int metaScore, String director, String star1, String star2, String star3, String star4, int numberOfVotes, int gross) {
+    this(); // chama construtor sem parametro
+
     this.posterLink = posterLink;
     this.seriesTitle = seriesTitle;
     this.releasedYear = releasedYear;
@@ -42,6 +48,8 @@ public class Movie {
   }
 
   public Movie(String line) {
+    this(); // chama construtor sem parametro
+
     String[] fields = ParseUtil.parseCSVLine(line);
 
     this.posterLink = fields[0];
@@ -62,9 +70,30 @@ public class Movie {
     this.gross = ParseUtil.parseInt(fields[15]);
   }
 
+  public Movie(int id, String posterLink, String seriesTitle, int releasedYear, String certificate, String runtime, String[] genre, float imdbRating, String overview, int metaScore, String director, String star1, String star2, String star3, String star4, int numberOfVotes, int gross) {
+    this.id = id;
+    this.posterLink = posterLink;
+    this.seriesTitle = seriesTitle;
+    this.releasedYear = releasedYear;
+    this.certificate = certificate;
+    this.runtime = runtime;
+    this.genre = genre;
+    this.imdbRating = imdbRating;
+    this.overview = overview;
+    this.metaScore = metaScore;
+    this.director = director;
+    this.star1 = star1;
+    this.star2 = star2;
+    this.star3 = star3;
+    this.star4 = star4;
+    this.numberOfVotes = numberOfVotes;
+    this.gross = gross;
+  }
+
   @Override
   public String toString() {
-    return seriesTitle
+    return "[" + id + "]"
+        + " " + seriesTitle
         + " (" + releasedYear + ")"
         + " - " + director;
   }
