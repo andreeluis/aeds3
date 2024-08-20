@@ -63,8 +63,11 @@ public class Movie {
   }
 
   public void setDistributor(String distributor) {
-    if (distributor != "")
+    if (distributor != "" && distributor != null) {
       this.distributor = distributor;
+    } else {
+      this.distributor = "Unknown";
+    }
   }
 
   public int getBudget() {
@@ -226,18 +229,18 @@ public class Movie {
 
     data.writeInt(id);
     data.writeUTF(title);
-    // data.writeUTF(movieInfo);
-    // data.writeInt(year);
-    // data.writeUTF(distributor);
-    // data.writeInt(budget);
-    // data.writeInt(domesticOpening);
-    // data.writeInt(domesticSales);
-    // data.writeInt(internationalSales);
-    // data.writeInt(worldWideSales);
-    // data.writeInt(releaseDate);
-    // data.writeUTF(runningTime);
-    // data.writeUTF(license);
-    // data.writeInt(lastId);
+    data.writeUTF(movieInfo);
+    data.writeInt(year);
+    data.writeUTF(distributor);
+    data.writeInt(budget);
+    data.writeInt(domesticOpening);
+    data.writeInt(domesticSales);
+    data.writeInt(internationalSales);
+    data.writeInt(worldWideSales);
+    data.writeInt(releaseDate);
+    data.writeUTF(runningTime);
+    data.writeUTF(license);
+    data.writeInt(lastId);
 
     return output.toByteArray();
   }
