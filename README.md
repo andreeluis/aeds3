@@ -4,26 +4,26 @@
 This repository contains the projects developed during the course of Algorithms and Data Structures III at PUC Minas.
 
 ## Dataset
-The dataset used in the projects is available at [Kaggle](https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows). The dataset contains information about the top 1000 movies and TV shows on IMDb and has the following columns:
+The dataset used in the projects is available at [Kaggle](https://www.kaggle.com/datasets/sanjeetsinghnaik/top-1000-highest-grossing-movies/data). The dataset contains information about the top 1000 highest grossing movies and has the following columns:
 
 | Column Name | Description |
 | --- | --- |
-| Poster_Link | Link of the poster that IMDb uses |
-| Series_Title | Name of the movie |
-| Released_Year | Year at which that movie released |
-| Certificate | Certificate earned by that movie |
-| Runtime | Total runtime of the movie |
-| Genre | Genre of the movie |
-| IMDB_Rating | Rating of the movie at IMDb site |
-| Overview | Mini story/summary |
-| Meta_score | Score earned by the movie |
-| Director | Name of the director |
-| Star1 | Name of the first star |
-| Star2 | Name of the second star |
-| Star3 | Name of the third star |
-| Star4 | Name of the fourth star |
-| No_of_votes | Total number of votes |
-| Gross | Money earned by that movie |
+|  | *int*: id |
+| Title | *String*: Movie Name |
+| Movie Info | *String*: Movies Brief Introduction |
+| Year |  |
+| Distributor | *String*: Dsitributor Name |
+| Budget (in $) |  |
+| Domestic Opening (in $) |  |
+| Domestic Sales (in $) | *int*: Domestic Sales Of The Movie |
+| International Sales (in $) | *int*: International Sales Of The Movie |
+| World Wide Sales (in $) | *int*: World Sales Of The Movie |
+| Release Date | *String*: Original Release Date |
+| Genre | *List<String>*: Genres The Movie Belongs To |
+| Running Time | *String*: Movie Runtime |
+| License | *String*: License |
+
+
 
 ## TPs
 The projects are divided into the following TPs:

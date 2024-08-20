@@ -1,8 +1,10 @@
 package util;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
+import db.Database;
 import model.Movie;
 
 public class Menu {
@@ -56,7 +58,7 @@ public class Menu {
   }
 
   private void readFromCSV() {
-    String defaultCSVPath = "../dataset/imdb_top_1000.csv";
+    String defaultCSVPath = "../dataset/movies.csv";
 
     System.out.print("Qual caminho do arquivo? ");
     String path = sc.nextLine();
@@ -73,6 +75,7 @@ public class Menu {
       while (csvScanner.hasNextLine()) {
         // Cria objeto
         Movie movie = new Movie(csvScanner.nextLine());
+        System.out.println(movie);
 
         // Escrita (TODO)
 
