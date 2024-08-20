@@ -88,4 +88,76 @@ public class Menu {
       menu();
     }
   }
+
+  private void updateMovie() {
+    System.out.print("Qual o ID do filme a ser alterado? ");
+    int id = sc.nextInt();
+    Movie movie = Database.read(id);
+
+    if (movie == null) {
+      System.out.println("Filme não encontrado para alteração.");
+      sc.nextLine(); // Espera um enter
+      return;
+    }
+
+    // Recebe novos dados
+    System.out.println("Editando filme ID[" + movie.getId() + "]");
+
+    System.out.print("Nome do filme: ");
+    movie.setTitle(sc.nextLine());
+
+    System.out.print("Resumo: ");
+    movie.setMovieInfo(sc.nextLine());
+
+    System.out.print("Ano de lançamento: ");
+    movie.setYear(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("Distribuidor: ");
+    movie.setDistributor(sc.nextLine());
+
+    System.out.print("Valor: ");
+    movie.setBudget(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("Domestic Opening: ");
+    movie.setDomesticOpening(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("Domestic Sales: ");
+    movie.setDomesticSales(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("International Sales: ");
+    movie.setInternationalSales(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("World Wide Sales: ");
+    movie.setWorldWideSales(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("Release Date: ");
+    movie.setReleaseDate(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("Gênero: ");
+    movie.setGenre(sc.nextLine().split(","));
+
+    System.out.print("Duração: ");
+    movie.setRunningTime(sc.nextLine());
+
+    System.out.print("Licença: ");
+    movie.setLicense(sc.nextLine());
+
+    // atualiza o filme
+    //movie = Database.update(id, movie);
+
+    menu();
+  }
+
+  private void deleteMovie() {
+    System.out.print("Qual o ID do filme a ser excluído? ");
+    int id = sc.nextInt();
+
+    if (Database.delete(id))
+      System.out.println("Filme excluído com sucesso!");
+    else
+      System.out.println("Erro ao excluir filme.");
+
+    sc.nextLine(); // Espera um enter
+    menu();
+  }
 }
