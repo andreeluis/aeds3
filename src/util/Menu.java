@@ -2,6 +2,7 @@ package util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Scanner;
 
 import db.Database;
@@ -75,10 +76,8 @@ public class Menu {
       while (csvScanner.hasNextLine()) {
         // Cria objeto
         Movie movie = new Movie(csvScanner.nextLine());
-        System.out.println(movie);
-
-        // Escrita (TODO)
-
+        // Escrita
+        Database.create(movie);
       }
 
       csvScanner.close();

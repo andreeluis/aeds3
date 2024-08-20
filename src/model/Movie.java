@@ -1,5 +1,9 @@
 package model;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 import util.ParseUtil;
 
 public class Movie {
@@ -145,12 +149,13 @@ public class Movie {
     return ++lastId;
   }
 
-
   public Movie() {
     this.setId(getNextId());
   }
 
-  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, int releaseDate, String[] genre, String runningTime, String license) {
+  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening,
+      int domesticSales, int internationalSales, int worldWideSales, int releaseDate, String[] genre,
+      String runningTime, String license) {
     this(); // chama construtor sem parametro
 
     this.setTitle(title);
@@ -189,7 +194,9 @@ public class Movie {
     this.setLicense(fields[13]);
   }
 
-  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, int releaseDate, String[] genre, String runningTime, String license) {
+  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening,
+      int domesticSales, int internationalSales, int worldWideSales, int releaseDate, String[] genre,
+      String runningTime, String license) {
     this.setId(id);
     this.setTitle(title);
     this.setMovieInfo(movieInfo);
@@ -211,5 +218,27 @@ public class Movie {
     return "[" + this.getId() + "]"
         + " " + this.getTitle()
         + " (" + this.getYear() + ")";
+  }
+
+  public byte[] toByteArray() throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    DataOutputStream data = new DataOutputStream(output);
+
+    data.writeInt(id);
+    data.writeUTF(title);
+    // data.writeUTF(movieInfo);
+    // data.writeInt(year);
+    // data.writeUTF(distributor);
+    // data.writeInt(budget);
+    // data.writeInt(domesticOpening);
+    // data.writeInt(domesticSales);
+    // data.writeInt(internationalSales);
+    // data.writeInt(worldWideSales);
+    // data.writeInt(releaseDate);
+    // data.writeUTF(runningTime);
+    // data.writeUTF(license);
+    // data.writeInt(lastId);
+
+    return output.toByteArray();
   }
 }
