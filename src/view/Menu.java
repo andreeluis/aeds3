@@ -1,8 +1,7 @@
-package util;
+package view;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Scanner;
 
 import db.Database;
@@ -61,7 +60,7 @@ public class Menu {
   private void readFromCSV() {
     String defaultCSVPath = "../dataset/movies.csv";
 
-    System.out.print("Qual caminho do arquivo? ");
+    System.out.print("| > Qual caminho do arquivo? ");
     String path = sc.nextLine();
     if (path == "") {
       path = defaultCSVPath;
@@ -72,10 +71,16 @@ public class Menu {
       File csvFile = new File(path);
       Scanner csvScanner = new Scanner(csvFile);
 
+      // Escrita da ultimo id (TODO)
       csvScanner.nextLine(); // skip csv header
       while (csvScanner.hasNextLine()) {
         // Cria objeto
         Movie movie = new Movie(csvScanner.nextLine());
+
+        // Escrita da lapide (TODO)
+
+        // Escrita do tamanho do registro (TODO)
+
         // Escrita
         Database.create(movie);
       }
@@ -88,64 +93,64 @@ public class Menu {
     }
   }
 
-  // private void updateMovie() {
-  // System.out.print("Qual o ID do filme a ser alterado? ");
-  // int id = sc.nextInt();
-  // Movie movie = Database.read(id);
+  //private void updateMovie() {
+    // System.out.print("Qual o ID do filme a ser alterado? ");
+    // int id = sc.nextInt();
+    // Movie movie = Database.read(id);
 
-  // if (movie == null) {
-  // System.out.println("Filme não encontrado para alteração.");
-  // sc.nextLine(); // Espera um enter
-  // return;
-  // }
+    // if (movie == null) {
+    //   System.out.println("Filme não encontrado para alteração.");
+    //   sc.nextLine(); // Espera um enter
+    //   return;
+    // }
 
-  // // Recebe novos dados
-  // System.out.println("Editando filme ID[" + movie.getId() + "]");
+    // // Recebe novos dados
+    // System.out.println("Editando filme ID[" + movie.getId() + "]");
 
-  // System.out.print("Nome do filme: ");
-  // movie.setTitle(sc.nextLine());
+    // System.out.print("Nome do filme: ");
+    // movie.setTitle(sc.nextLine());
 
-  // System.out.print("Resumo: ");
-  // movie.setMovieInfo(sc.nextLine());
+    // System.out.print("Resumo: ");
+    // movie.setMovieInfo(sc.nextLine());
 
-  // System.out.print("Ano de lançamento: ");
-  // movie.setYear(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("Ano de lançamento: ");
+    // movie.setYear(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("Distribuidor: ");
-  // movie.setDistributor(sc.nextLine());
+    // System.out.print("Distribuidor: ");
+    // movie.setDistributor(sc.nextLine());
 
-  // System.out.print("Valor: ");
-  // movie.setBudget(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("Valor: ");
+    // movie.setBudget(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("Domestic Opening: ");
-  // movie.setDomesticOpening(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("Domestic Opening: ");
+    // movie.setDomesticOpening(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("Domestic Sales: ");
-  // movie.setDomesticSales(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("Domestic Sales: ");
+    // movie.setDomesticSales(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("International Sales: ");
-  // movie.setInternationalSales(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("International Sales: ");
+    // movie.setInternationalSales(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("World Wide Sales: ");
-  // movie.setWorldWideSales(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("World Wide Sales: ");
+    // movie.setWorldWideSales(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("Release Date: ");
-  // movie.setReleaseDate(ParseUtil.parseInt(sc.nextLine()));
+    // System.out.print("Release Date: ");
+    // movie.setReleaseDate(ParseUtil.parseInt(sc.nextLine()));
 
-  // System.out.print("Gênero: ");
-  // movie.setGenre(sc.nextLine().split(","));
+    // System.out.print("Gênero: ");
+    // movie.setGenre(sc.nextLine().split(","));
 
-  // System.out.print("Duração: ");
-  // movie.setRunningTime(sc.nextLine());
+    // System.out.print("Duração: ");
+    // movie.setRunningTime(sc.nextLine());
 
-  // System.out.print("Licença: ");
-  // movie.setLicense(sc.nextLine());
+    // System.out.print("Licença: ");
+    // movie.setLicense(sc.nextLine());
 
-  // // atualiza o filme
-  // //movie = Database.update(id, movie);
+    // // atualiza o filme
+    // // movie = Database.update(id, movie);
 
-  // menu();
-  // }
+    // menu();
+  //}
 
   // private void deleteMovie() {
   // System.out.print("Qual o ID do filme a ser excluído? ");
