@@ -1,6 +1,8 @@
 package model;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -17,7 +19,7 @@ public class Movie {
   private int domesticSales;
   private int internationalSales;
   private int worldWideSales;
-  private int releaseDate;
+  private String releaseDate;
   private String[] genre;
   private String runningTime;
   private String license;
@@ -110,11 +112,11 @@ public class Movie {
     this.worldWideSales = worldWideSales;
   }
 
-  public int getReleaseDate() {
+  public String getReleaseDate() {
     return releaseDate;
   }
 
-  public void setReleaseDate(int releaseDate) {
+  public void setReleaseDate(String releaseDate) {
     this.releaseDate = releaseDate;
   }
 
@@ -156,9 +158,7 @@ public class Movie {
     this.setId(getNextId());
   }
 
-  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening,
-      int domesticSales, int internationalSales, int worldWideSales, int releaseDate, String[] genre,
-      String runningTime, String license) {
+  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, String releaseDate, String[] genre, String runningTime, String license) {
     this(); // chama construtor sem parametro
 
     this.setTitle(title);
@@ -191,15 +191,13 @@ public class Movie {
     this.setDomesticSales(ParseUtil.parseInt(fields[7]));
     this.setInternationalSales(ParseUtil.parseInt(fields[8]));
     this.setWorldWideSales(ParseUtil.parseInt(fields[9]));
-    this.setReleaseDate(ParseUtil.parseInt(fields[10]));
+    this.setReleaseDate(fields[10]);
     this.setGenre(fields[11].split(","));
     this.setRunningTime(fields[12]);
     this.setLicense(fields[13]);
   }
 
-  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening,
-      int domesticSales, int internationalSales, int worldWideSales, int releaseDate, String[] genre,
-      String runningTime, String license) {
+  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, String releaseDate, String[] genre,      String runningTime, String license) {
     this.setId(id);
     this.setTitle(title);
     this.setMovieInfo(movieInfo);
@@ -216,6 +214,28 @@ public class Movie {
     this.setLicense(license);
   }
 
+  public Movie(byte[] byteArray) {
+    try {
+      ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
+      DataInputStream data = new DataInputStream(input);
+
+      this.setId(data.readInt());
+      this.setTitle(data.readUTF());
+      this.setMovieInfo(data.readUTF());
+      this.setYear(data.readInt());
+      this.setDistributor(data.readUTF());
+      this.setBudget(data.readInt());
+      this.setDomesticOpening(data.readInt());
+      this.setDomesticSales(data.readInt());
+      this.setInternationalSales(data.readInt());
+      this.setWorldWideSales(data.readInt());
+      this.setReleaseDate(data.readUTF());
+      //this.setGenre(genre);
+      this.setRunningTime(data.readUTF());
+      this.setLicense(data.readUTF());
+    } catch (IOException e) { }
+  }
+
   @Override
   public String toString() {
     return "[" + this.getId() + "]"
@@ -227,20 +247,20 @@ public class Movie {
     ByteArrayOutputStream output = new ByteArrayOutputStream();
     DataOutputStream data = new DataOutputStream(output);
 
-    data.writeInt(id);
-    data.writeUTF(title);
-    data.writeUTF(movieInfo);
-    data.writeInt(year);
-    data.writeUTF(distributor);
-    data.writeInt(budget);
-    data.writeInt(domesticOpening);
-    data.writeInt(domesticSales);
-    data.writeInt(internationalSales);
-    data.writeInt(worldWideSales);
-    data.writeInt(releaseDate);
-    data.writeUTF(runningTime);
-    data.writeUTF(license);
-    data.writeInt(lastId);
+    data.writeInt(this.getId());
+    data.writeUTF(this.getTitle());
+    data.writeUTF(this.getMovieInfo());
+    data.writeInt(this.getBudget());
+    data.writeUTF(this.getDistributor());
+    data.writeInt(this.getBudget());
+    data.writeInt(this.getDomesticOpening());
+    data.writeInt(this.getDomesticSales());
+    data.writeInt(this.getInternationalSales());
+    data.writeInt(this.getWorldWideSales());
+    data.writeUTF(this.getReleaseDate());
+    //data.writeUTF(this.getGenre());
+    data.writeUTF(this.getRunningTime());
+    data.writeUTF(this.getLicense());
 
     return output.toByteArray();
   }
