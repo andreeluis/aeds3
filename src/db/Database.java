@@ -1,9 +1,5 @@
 package db;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -16,18 +12,24 @@ public class Database {
   private static String defaultDBPath = "./db/dados" + fileExtension;
 
   public static void create(Movie movie) {
-    RandomAccessFile data = null;
     try {
-      data = new RandomAccessFile(defaultDBPath, "rw");
-      // write last id
+      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
+
+      // le o lastId e atribui id ao filme
+      int lastId = data.readInt();
+      movie.setId(++lastId);
+
+      // atualiza o lastId
       data.seek(0);
-      data.writeInt(Movie.getLastId());
+      data.writeInt(lastId);
+
+      // escreve o filme no final do arquivo
       data.seek(data.length());
 
       byte[] byteArrayMovie = movie.toByteArray();
-      data.writeBoolean(false);
-      data.writeInt(byteArrayMovie.length);
-      data.write(byteArrayMovie);
+      data.writeBoolean(false); // lapide
+      data.writeInt(byteArrayMovie.length); // tam registro
+      data.write(byteArrayMovie); // registro
 
       data.close();
     } catch (IOException e) {
@@ -42,10 +44,10 @@ public class Database {
     try {
       RandomAccessFile data = new RandomAccessFile(defaultDBPath, "r");
 
-      // Testar last int (TODO)
+      // lastId
       int lastId = data.readInt();
-      // int lastId = Movie.getLastId();
-      if (lastId > id) {
+
+      if (id <= lastId) {
         do {
           boolean lapide = data.readBoolean();
           int len = data.readInt();
@@ -66,10 +68,10 @@ public class Database {
 
       data.close();
     } catch (IOException e) {
-      System.out.println(e);
+      System.out.println("Erro ao buscar registro. " + e);
     }
 
-    return movie;
+    return found ? movie : null;
   }
 
   public static Movie update(int id, Movie movie) {
@@ -77,51 +79,46 @@ public class Database {
     return movie;
   }
 
-  public static boolean delete(int id) {
+  public static Movie delete(int id) {
+    boolean deleted = false;
     Movie movie = null;
-    RandomAccessFile data = null;
 
     try {
-      data = new RandomAccessFile(defaultDBPath, "rw");
+      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
 
+      // lastId
       int lastId = data.readInt();
-      if (lastId > id) {
-        while (data.getFilePointer() < data.length()) {
+
+      if (id <= lastId) {
+        do {
+          // salva a posição da lapide
           long lapidePosition = data.getFilePointer();
+
           boolean lapide = data.readBoolean();
           int len = data.readInt();
-          System.out.println(len);
+
           if (!lapide) {
             byte[] byteArrayMovie = new byte[len];
             data.read(byteArrayMovie);
 
             movie = new Movie(byteArrayMovie);
-            System.out.println(movie);
 
             if (movie.getId() == id) {
               data.seek(lapidePosition);
               data.writeBoolean(true);
-              return true;
+              deleted = true;
             }
           } else {
             data.skipBytes(len);
           }
-        }
+        } while (!deleted && data.getFilePointer() < data.length());
       }
+
+      data.close();
     } catch (IOException e) {
-      System.out.println(e);
-      return false;
-    } finally {
-      // Fecha o RandomAccessFile, garantindo a liberação de recursos
-      if (data != null) {
-        try {
-          data.close();
-        } catch (IOException e) {
-          System.out.println("Erro ao fechar o arquivo: " + e);
-        }
-      }
+      System.out.println("Erro ao excluir registro. " + e);
     }
 
-    return false;
+    return deleted ? movie : null;
   }
 }
