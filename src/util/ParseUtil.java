@@ -29,7 +29,7 @@ public class ParseUtil {
     try {
       return Integer.parseInt(value.replace(",", "").trim());
     } catch (NumberFormatException e) {
-      return 0; // Valor padrão em caso de erro
+      return -1; // Valor padrão em caso de erro
     }
   }
 }
