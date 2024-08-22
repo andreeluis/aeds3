@@ -51,7 +51,7 @@ public class Menu {
           updateMovie();
           break;
         case 4:
-          //deleteMovie();
+          deleteMovie();
           break;
         case 0:
         default:
@@ -167,16 +167,17 @@ public class Menu {
     sc.nextLine(); // Espera um enter
   }
 
-  // private void deleteMovie() {
-  // System.out.print("Qual o ID do filme a ser excluído? ");
-  // int id = sc.nextInt();
+  private void deleteMovie() {
+    System.out.print("Qual o ID do filme a ser excluído? ");
+    int id = sc.nextInt();
 
-  // if (Database.delete(id))
-  // System.out.println("Filme excluído com sucesso!");
-  // else
-  // System.out.println("Erro ao excluir filme.");
+    if (Database.delete(id))
+      System.out.println("Filme excluído com sucesso!");
+    else
+      System.out.println("Erro ao excluir filme.");
 
-  // sc.nextLine(); // Espera um enter
-  // menu();
-  // }
+    sc.nextLine(); // Espera um enter
+    sc.nextLine(); // Espera um enter
+    menu();
+  }
 }
