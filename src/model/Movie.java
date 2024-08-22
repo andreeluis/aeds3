@@ -39,8 +39,11 @@ public class Movie {
   }
 
   public void setTitle(String title) {
-    if (title != "")
+    if (!title.isBlank()) {
       this.title = title;
+    } else if (this.title == null || this.title.isBlank()) {
+      this.title = "Unknown";
+    }
   }
 
   public String getMovieInfo() {
@@ -48,8 +51,11 @@ public class Movie {
   }
 
   public void setMovieInfo(String movieInfo) {
-    if (movieInfo != "")
+    if (!movieInfo.isBlank()) {
       this.movieInfo = movieInfo;
+    } else if (this.movieInfo == null || this.movieInfo.isBlank()) {
+      this.movieInfo = "Unknown";
+    }
   }
 
   public int getYear() {
@@ -65,9 +71,9 @@ public class Movie {
   }
 
   public void setDistributor(String distributor) {
-    if (distributor != "" && distributor != null) {
+    if (!distributor.isBlank()) {
       this.distributor = distributor;
-    } else {
+    } else if (this.distributor == null || this.distributor.isBlank()) {
       this.distributor = "Unknown";
     }
   }
@@ -117,7 +123,11 @@ public class Movie {
   }
 
   public void setReleaseDate(String releaseDate) {
-    this.releaseDate = releaseDate;
+    if (!releaseDate.isBlank()) {
+      this.releaseDate = releaseDate;
+    } else if (this.releaseDate == null || this.releaseDate.isBlank()) {
+      this.releaseDate = "Unknown";
+    }
   }
 
   public String[] getGenre() {
@@ -133,8 +143,11 @@ public class Movie {
   }
 
   public void setRunningTime(String runningTime) {
-    if (runningTime != "")
+    if (!runningTime.isBlank()) {
       this.runningTime = runningTime;
+    } else if (this.runningTime == null || this.runningTime.isBlank()) {
+      this.runningTime = "Unknown";
+    }
   }
 
   public String getLicense() {
@@ -142,8 +155,11 @@ public class Movie {
   }
 
   public void setLicense(String license) {
-    if (license != "")
+    if (!license.isBlank()) {
       this.license = license;
+    } else if (this.license == null || this.license.isBlank()) {
+      this.license = "Unknown";
+    }
   }
 
   public static int getLastId() {
