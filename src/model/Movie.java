@@ -23,7 +23,7 @@ public class Movie {
   private String[] genre;
   private String runningTime;
   private String license;
-  private static int lastId;
+  private static int lastId = -1;
 
   // id
   public int getId() {
@@ -34,6 +34,7 @@ public class Movie {
     this.id = id;
   }
 
+  // title
   public String getTitle() {
     return title;
   }
@@ -46,6 +47,7 @@ public class Movie {
     }
   }
 
+  // movieInfo
   public String getMovieInfo() {
     return movieInfo;
   }
@@ -58,14 +60,18 @@ public class Movie {
     }
   }
 
+  // year
   public int getYear() {
     return year;
   }
 
   public void setYear(int year) {
-    this.year = year;
+    if (year >= 0) {
+      this.year = year;
+    }
   }
 
+  // distributor
   public String getDistributor() {
     return distributor;
   }
@@ -78,46 +84,62 @@ public class Movie {
     }
   }
 
+  // budget
   public int getBudget() {
     return budget;
   }
 
   public void setBudget(int budget) {
-    this.budget = budget;
+    if (budget >= 0) {
+      this.budget = budget;
+    }
   }
 
+  // domesticOpening
   public int getDomesticOpening() {
     return domesticOpening;
   }
 
   public void setDomesticOpening(int domesticOpening) {
-    this.domesticOpening = domesticOpening;
+    if (domesticOpening >= 0) {
+      this.domesticOpening = domesticOpening;
+    }
   }
 
+  // domesticSales
   public int getDomesticSales() {
     return domesticSales;
   }
 
   public void setDomesticSales(int domesticSales) {
-    this.domesticSales = domesticSales;
+    if (domesticSales >= 0) {
+      this.domesticSales = domesticSales;
+    }
   }
 
+  // internationalSales
   public int getInternationalSales() {
     return internationalSales;
   }
 
   public void setInternationalSales(int internationalSales) {
-    this.internationalSales = internationalSales;
+    if (internationalSales >= 0) {
+      this.internationalSales = internationalSales;
+    }
   }
 
+  // worldWideSales
   public int getWorldWideSales() {
     return worldWideSales;
   }
 
   public void setWorldWideSales(int worldWideSales) {
-    this.worldWideSales = worldWideSales;
+    if (worldWideSales >= 0) {
+      this.worldWideSales = worldWideSales;
+    }
   }
 
+  // releaseDate
   public String getReleaseDate() {
     return releaseDate;
   }
@@ -130,6 +152,7 @@ public class Movie {
     }
   }
 
+  // genre
   public String[] getGenre() {
     return genre;
   }
@@ -138,6 +161,7 @@ public class Movie {
     this.genre = genre;
   }
 
+  // runningTime
   public String getRunningTime() {
     return runningTime;
   }
@@ -150,6 +174,7 @@ public class Movie {
     }
   }
 
+  // license
   public String getLicense() {
     return license;
   }
@@ -166,16 +191,16 @@ public class Movie {
     return lastId;
   }
 
-  public static int getNextId() {
-    return ++lastId;
+  public static void setLastId(int lastId) {
+    Movie.lastId = lastId;
   }
 
   public Movie() {
-    this.setId(getNextId());
+    this.setId(-1);
   }
 
   public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, String releaseDate, String[] genre, String runningTime, String license) {
-    this(); // chama construtor sem parametro
+    this(); // construtor sem parametro
 
     this.setTitle(title);
     this.setMovieInfo(movieInfo);
@@ -193,11 +218,11 @@ public class Movie {
   }
 
   public Movie(String line) {
-    this(); // chama construtor sem parametro
+    this(); // construtor sem parametro
 
     String[] fields = ParseUtil.parseCSVLine(line);
+    // fields[0] -> id (não utilizado)
 
-    this.setId(ParseUtil.parseInt(fields[0]));
     this.setTitle(fields[1]);
     this.setMovieInfo(fields[2]);
     this.setYear(ParseUtil.parseInt(fields[3]));
