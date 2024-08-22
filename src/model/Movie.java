@@ -250,7 +250,7 @@ public class Movie {
     data.writeInt(this.getId());
     data.writeUTF(this.getTitle());
     data.writeUTF(this.getMovieInfo());
-    data.writeInt(this.getBudget());
+    data.writeInt(this.getYear());
     data.writeUTF(this.getDistributor());
     data.writeInt(this.getBudget());
     data.writeInt(this.getDomesticOpening());
