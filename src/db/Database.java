@@ -16,16 +16,20 @@ public class Database {
   private static String defaultDBPath = "./db/dados" + fileExtension;
 
   public static void create(Movie movie) {
+    RandomAccessFile data = null;
     try {
-      FileOutputStream file = new FileOutputStream(defaultDBPath, true);
-      DataOutputStream database = new DataOutputStream(file);
+      data = new RandomAccessFile(defaultDBPath, "rw");
+      // write last id
+      data.seek(0);
+      data.writeInt(Movie.getLastId());
+      data.seek(data.length());
 
       byte[] byteArrayMovie = movie.toByteArray();
-      database.writeBoolean(false);
-      database.writeInt(byteArrayMovie.length);
-      database.write(byteArrayMovie);
+      data.writeBoolean(false);
+      data.writeInt(byteArrayMovie.length);
+      data.write(byteArrayMovie);
 
-      database.close();
+      data.close();
     } catch (IOException e) {
       System.out.println("Erro ao criar o arquivo de banco de dados.");
     }
@@ -36,12 +40,11 @@ public class Database {
     boolean found = false;
 
     try {
-      FileInputStream database = new FileInputStream(defaultDBPath);
-      DataInputStream data = new DataInputStream(database);
+      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "r");
 
       // Testar last int (TODO)
-      // int lastId = data.readInt();
-      int lastId = Movie.getLastId();
+      int lastId = data.readInt();
+      // int lastId = Movie.getLastId();
       if (lastId > id) {
         do {
           boolean lapide = data.readBoolean();
@@ -56,9 +59,9 @@ public class Database {
               found = true;
             }
           } else {
-            data.skip(len);
+            data.skipBytes(len);
           }
-        } while (!found && database.available() > 0);
+        } while (!found && data.getFilePointer() < data.length());
       }
 
       data.close();
@@ -81,7 +84,7 @@ public class Database {
     try {
       data = new RandomAccessFile(defaultDBPath, "rw");
 
-      int lastId = Movie.getLastId();
+      int lastId = data.readInt();
       if (lastId > id) {
         while (data.getFilePointer() < data.length()) {
           long lapidePosition = data.getFilePointer();
@@ -93,7 +96,6 @@ public class Database {
             data.read(byteArrayMovie);
 
             movie = new Movie(byteArrayMovie);
-
             System.out.println(movie);
 
             if (movie.getId() == id) {
