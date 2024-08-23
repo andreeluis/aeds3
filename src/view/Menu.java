@@ -83,6 +83,7 @@ public class Menu {
       }
 
       csvScanner.close();
+      System.out.println("Dados carregados com sucesso.");
     } catch (FileNotFoundException e) {
       System.out.println("Erro ao abrir o arquivo CSV.");
     }

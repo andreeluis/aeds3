@@ -157,8 +157,77 @@ public class Movie {
     return genre;
   }
 
+  private String getGenreString() {
+    StringBuilder genreString = new StringBuilder();
+
+    genreString.append("[");
+    for (String g : genre) {
+      genreString.append(" ");
+      genreString.append(g);
+      genreString.append(",");
+    }
+    genreString.deleteCharAt(genreString.length() - 1);
+    genreString.append(" ]");
+
+    return genreString.toString();
+  }
+
+  private byte[] getGenreByteArray() throws IOException {
+    ByteArrayOutputStream array = new ByteArrayOutputStream();
+    DataOutputStream data = new DataOutputStream(array);
+
+    // escreve o total de generos
+    data.writeInt(genre.length);
+
+    // escreve todas as strings
+    for (String g : genre) {
+      data.writeUTF(g);
+    }
+
+    data.close();
+
+    byte[] byteArray = array.toByteArray();
+    int len = byteArray.length;
+
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    data = new DataOutputStream(output);
+
+    // len; qtd; genreArray
+    data.writeInt(len);
+    data.write(byteArray);
+
+    data.close();
+
+    return output.toByteArray();
+  }
+
   public void setGenre(String[] genre) {
-    this.genre = genre;
+    if (genre.length > 0) {
+      this.genre = genre;
+    }
+  }
+
+  public void setGenre(String genre) {
+    if (!genre.isBlank()) {
+      genre = genre.replace("[", "");
+      genre = genre.replace("]", "");
+      genre = genre.replace("'", "");
+      genre = genre.replace(", ", ",");
+
+      setGenre(genre.split(","));
+    }
+  }
+
+  public void setGenre(byte[] byteArray) throws IOException {
+    ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
+    DataInputStream data = new DataInputStream(input);
+
+    int len = data.readInt();
+    genre = new String[len];
+
+    for (int i = 0; i < len; i++) {
+      genre[i] = data.readUTF();
+    }
   }
 
   // runningTime
@@ -233,7 +302,7 @@ public class Movie {
     this.setInternationalSales(ParseUtil.parseInt(fields[8]));
     this.setWorldWideSales(ParseUtil.parseInt(fields[9]));
     this.setReleaseDate(fields[10]);
-    this.setGenre(fields[11].split(","));
+    this.setGenre(fields[11]);
     this.setRunningTime(fields[12]);
     this.setLicense(fields[13]);
   }
@@ -255,33 +324,36 @@ public class Movie {
     this.setLicense(license);
   }
 
-  public Movie(byte[] byteArray) {
-    try {
-      ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
-      DataInputStream data = new DataInputStream(input);
+  public Movie(byte[] byteArray) throws IOException {
+    ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
+    DataInputStream data = new DataInputStream(input);
 
-      this.setId(data.readInt());
-      this.setTitle(data.readUTF());
-      this.setMovieInfo(data.readUTF());
-      this.setYear(data.readInt());
-      this.setDistributor(data.readUTF());
-      this.setBudget(data.readInt());
-      this.setDomesticOpening(data.readInt());
-      this.setDomesticSales(data.readInt());
-      this.setInternationalSales(data.readInt());
-      this.setWorldWideSales(data.readInt());
-      this.setReleaseDate(data.readUTF());
-      //this.setGenre(genre);
-      this.setRunningTime(data.readUTF());
-      this.setLicense(data.readUTF());
-    } catch (IOException e) { }
+    this.setId(data.readInt());
+    this.setTitle(data.readUTF());
+    this.setMovieInfo(data.readUTF());
+    this.setYear(data.readInt());
+    this.setDistributor(data.readUTF());
+    this.setBudget(data.readInt());
+    this.setDomesticOpening(data.readInt());
+    this.setDomesticSales(data.readInt());
+    this.setInternationalSales(data.readInt());
+    this.setWorldWideSales(data.readInt());
+    this.setReleaseDate(data.readUTF());
+
+    // genre
+    int genreLen = data.readInt();
+    this.setGenre(data.readNBytes(genreLen));
+
+    this.setRunningTime(data.readUTF());
+    this.setLicense(data.readUTF());
   }
 
   @Override
   public String toString() {
     return "[" + this.getId() + "]"
         + " " + this.getTitle()
-        + " (" + this.getYear() + ")";
+        + " (" + this.getYear() + ")"
+        + " " + this.getGenreString();
   }
 
   public byte[] toByteArray() throws IOException {
@@ -299,7 +371,7 @@ public class Movie {
     data.writeInt(this.getInternationalSales());
     data.writeInt(this.getWorldWideSales());
     data.writeUTF(this.getReleaseDate());
-    //data.writeUTF(this.getGenre());
+    data.write(this.getGenreByteArray());
     data.writeUTF(this.getRunningTime());
     data.writeUTF(this.getLicense());
 

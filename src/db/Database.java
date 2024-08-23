@@ -15,6 +15,12 @@ public class Database {
     try {
       RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
 
+      // criação do arquivo
+      if (data.length() == 0) {
+        data.writeInt(-1);
+        data.seek(0);
+      }
+
       // le o lastId e atribui id ao filme
       int lastId = data.readInt();
       movie.setId(++lastId);
@@ -33,7 +39,7 @@ public class Database {
 
       data.close();
     } catch (IOException e) {
-      System.out.println("Erro ao criar o arquivo de banco de dados.");
+      System.out.println("Erro ao criar o arquivo de banco de dados. " + e);
     }
   }
 
@@ -75,8 +81,62 @@ public class Database {
   }
 
   public static Movie update(int id, Movie movie) {
-    // TODO
-    return movie;
+    boolean updated = false;
+
+    try {
+      byte[] newByteArrayMovie = movie.toByteArray();
+      int newLen = newByteArrayMovie.length;
+
+      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
+
+      // lastId
+      int lastId = data.readInt();
+
+      if (id <= lastId) {
+        do {
+          // salva a posição da lapide
+          long lapidePosition = data.getFilePointer();
+
+          boolean lapide = data.readBoolean();
+          int len = data.readInt();
+
+          if (!lapide) {
+            byte[] byteArrayMovie = new byte[len];
+            data.read(byteArrayMovie);
+
+            movie = new Movie(byteArrayMovie);
+
+            if (movie.getId() == id) {
+              // posiciona na lapide
+              data.seek(lapidePosition);
+
+              // caso o novo registro seja maior
+              if (newLen > len) {
+                data.seek(lapidePosition);
+                data.writeBoolean(true);
+
+                // move para o final do arquivo
+                data.seek(data.length());
+              }
+
+              data.writeBoolean(false); // lapide
+              data.writeInt(newLen); // tam registro
+              data.write(newByteArrayMovie); // registro
+
+              updated = true;
+            }
+          } else {
+            data.skipBytes(len);
+          }
+        } while (!updated && data.getFilePointer() < data.length());
+      }
+
+      data.close();
+    } catch (IOException e) {
+      System.out.println("Erro ao atualizar registro. " + e);
+    }
+
+    return updated ? movie : null;
   }
 
   public static Movie delete(int id) {
