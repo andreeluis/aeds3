@@ -264,12 +264,38 @@ public class Movie {
     return license;
   }
 
+  public byte[] getLicenseByteArray() throws IOException {
+    ByteArrayOutputStream array = new ByteArrayOutputStream();
+    DataOutputStream data = new DataOutputStream(array);
+
+    if(license.length() > 5) {
+      data.write(license.getBytes(), 0, 5);
+    } else {
+      data.write(license.getBytes());
+      for(int i = data.size(); i < 5; i++) {
+        data.write(0);
+      }
+    }
+
+    return array.toByteArray();
+  }
+
   public void setLicense(String license) {
     if (!license.isBlank()) {
       this.license = license;
     } else if (this.license == null || this.license.isBlank()) {
       this.license = "Unknown";
     }
+  }
+
+  public void setLicense(byte[] byteArray) throws IOException {
+    ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
+    DataInputStream data = new DataInputStream(input);
+
+    byte[] licenseArray = new byte[5];
+    data.read(licenseArray);
+
+    this.license = new String(licenseArray);
   }
 
   public static int getLastId() {
@@ -361,14 +387,14 @@ public class Movie {
     this.setGenre(data.readNBytes(genreLen));
 
     this.setRunningTime(data.readUTF());
-    this.setLicense(data.readUTF());
+    this.setLicense(data.readNBytes(5));
   }
 
   @Override
   public String toString() {
     return "[" + this.getId() + "]"
         + " " + this.getTitle()
-        + " (" + this.getReleaseDate() + ")"
+        + " (" + this.getLicense() + ")"
         + " " + this.getGenreString();
   }
 
@@ -389,7 +415,7 @@ public class Movie {
     data.write(this.getReleaseDateByteArray());
     data.write(this.getGenreByteArray());
     data.writeUTF(this.getRunningTime());
-    data.writeUTF(this.getLicense());
+    data.write(this.getLicenseByteArray());
 
     return output.toByteArray();
   }
