@@ -141,7 +141,7 @@ public class Menu {
       movie.setWorldWideSales(ParseUtil.parseInt(sc.nextLine()));
 
       System.out.print("  - Data de lançamento: ");
-      movie.setReleaseDate(sc.nextLine());
+      movie.setReleaseDate(ParseUtil.parseLong(sc.nextLine()));
 
       System.out.print("  - Gênero: ");
       movie.setGenre(sc.nextLine().split(","));

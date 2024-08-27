@@ -104,24 +104,27 @@ public class Database {
             byte[] byteArrayMovie = new byte[len];
             data.read(byteArrayMovie);
 
-            movie = new Movie(byteArrayMovie);
+            Movie newMovie = new Movie(byteArrayMovie);
 
-            if (movie.getId() == id) {
+            if (newMovie.getId() == id) {
               // posiciona na lapide
               data.seek(lapidePosition);
 
               // caso o novo registro seja maior
               if (newLen > len) {
-                data.seek(lapidePosition);
                 data.writeBoolean(true);
 
                 // move para o final do arquivo
                 data.seek(data.length());
-              }
 
-              data.writeBoolean(false); // lapide
-              data.writeInt(newLen); // tam registro
-              data.write(newByteArrayMovie); // registro
+                data.writeBoolean(false); // lapide
+                data.writeInt(newByteArrayMovie.length); // tam registro
+                data.write(newByteArrayMovie); // registro
+              } else {
+                data.writeBoolean(false); // lapide
+                data.writeInt(len); // tam registro
+                data.write(newByteArrayMovie); // registro
+              }
 
               updated = true;
             }

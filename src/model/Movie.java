@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Date;
 
 import util.ParseUtil;
 
@@ -19,7 +20,7 @@ public class Movie {
   private int domesticSales;
   private int internationalSales;
   private int worldWideSales;
-  private String releaseDate;
+  private Date releaseDate;
   private String[] genre;
   private String runningTime;
   private String license;
@@ -139,16 +140,31 @@ public class Movie {
     }
   }
 
+  public byte[] getReleaseDateByteArray() throws IOException {
+    long miliseconds = releaseDate.getTime();
+
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    DataOutputStream data = new DataOutputStream(output);
+
+    data.writeLong(miliseconds);
+
+    return output.toByteArray();
+  }
+
   // releaseDate
-  public String getReleaseDate() {
+  public Date getReleaseDate() {
     return releaseDate;
   }
 
-  public void setReleaseDate(String releaseDate) {
-    if (!releaseDate.isBlank()) {
+  public void setReleaseDate(Date releaseDate) {
+    if (releaseDate != new Date(-1)) {
       this.releaseDate = releaseDate;
-    } else if (this.releaseDate == null || this.releaseDate.isBlank()) {
-      this.releaseDate = "Unknown";
+    }
+  }
+
+  public void setReleaseDate(long miliseconds) {
+    if (miliseconds >= 0) {
+      this.releaseDate = new Date(miliseconds);
     }
   }
 
@@ -202,7 +218,7 @@ public class Movie {
   }
 
   public void setGenre(String[] genre) {
-    if (genre.length > 0) {
+    if (!(genre.length == 1 && genre[0].isEmpty())) {
       this.genre = genre;
     }
   }
@@ -268,7 +284,7 @@ public class Movie {
     this.setId(-1);
   }
 
-  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, String releaseDate, String[] genre, String runningTime, String license) {
+  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre, String runningTime, String license) {
     this(); // construtor sem parametro
 
     this.setTitle(title);
@@ -301,13 +317,13 @@ public class Movie {
     this.setDomesticSales(ParseUtil.parseInt(fields[7]));
     this.setInternationalSales(ParseUtil.parseInt(fields[8]));
     this.setWorldWideSales(ParseUtil.parseInt(fields[9]));
-    this.setReleaseDate(fields[10]);
+    this.setReleaseDate(ParseUtil.parseLong(fields[10]));
     this.setGenre(fields[11]);
     this.setRunningTime(fields[12]);
     this.setLicense(fields[13]);
   }
 
-  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, String releaseDate, String[] genre,      String runningTime, String license) {
+  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre,      String runningTime, String license) {
     this.setId(id);
     this.setTitle(title);
     this.setMovieInfo(movieInfo);
@@ -338,7 +354,7 @@ public class Movie {
     this.setDomesticSales(data.readInt());
     this.setInternationalSales(data.readInt());
     this.setWorldWideSales(data.readInt());
-    this.setReleaseDate(data.readUTF());
+    this.setReleaseDate(data.readLong());
 
     // genre
     int genreLen = data.readInt();
@@ -352,7 +368,7 @@ public class Movie {
   public String toString() {
     return "[" + this.getId() + "]"
         + " " + this.getTitle()
-        + " (" + this.getYear() + ")"
+        + " (" + this.getReleaseDate() + ")"
         + " " + this.getGenreString();
   }
 
@@ -370,7 +386,7 @@ public class Movie {
     data.writeInt(this.getDomesticSales());
     data.writeInt(this.getInternationalSales());
     data.writeInt(this.getWorldWideSales());
-    data.writeUTF(this.getReleaseDate());
+    data.write(this.getReleaseDateByteArray());
     data.write(this.getGenreByteArray());
     data.writeUTF(this.getRunningTime());
     data.writeUTF(this.getLicense());
