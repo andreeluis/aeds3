@@ -9,7 +9,7 @@ import java.util.Date;
 
 import util.ParseUtil;
 
-public class Movie {
+public class Movie implements Comparable<Movie> {
   private int id;
   private String title;
   private String movieInfo;
@@ -388,6 +388,11 @@ public class Movie {
 
     this.setRunningTime(data.readUTF());
     this.setLicense(data.readNBytes(5));
+  }
+
+  @Override
+  public int compareTo(Movie other) {
+    return this.getId() - other.getId();
   }
 
   @Override
