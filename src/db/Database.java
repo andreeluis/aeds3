@@ -2,14 +2,19 @@ package db;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 
 import model.Movie;
+import sort.Heap;
 
 public class Database {
   // Estrutura do arquivo sequencial
   // LAST_ID; [lapide1; tam1; id1; reg1]; [lapide2; tam2; id2; reg2];
   private static String fileExtension = ".aeds3";
-  private static String defaultDBPath = "./db/dados" + fileExtension;
+  private static String filePath = "./db/dados";
+  private static String defaultDBPath = filePath + fileExtension;
+  private static int sortPaths = 3;
+  private static int sortImMemoryRegs = 10;
 
   public static void create(Movie movie) {
     try {
@@ -183,5 +188,30 @@ public class Database {
     }
 
     return deleted ? movie : null;
+  }
+
+  public static void sort() {
+    RandomAccessFile[] files = new RandomAccessFile[sortPaths];
+    Heap movies = new Heap(sortImMemoryRegs);
+
+    try {
+      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
+      data.readInt(); // skip lastId
+
+      for (int i = 0; i < sortPaths; i++) {
+        String tmpFilePath = filePath + i + fileExtension;
+        files[i] = new RandomAccessFile(tmpFilePath, "rw");
+      }
+
+      // fills heap with initial registers
+      movies.fill(data);
+
+
+
+
+      data.close();
+    } catch (IOException e) {
+      System.out.println(e);
+    }
   }
 }

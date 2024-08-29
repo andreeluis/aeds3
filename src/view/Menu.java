@@ -26,6 +26,7 @@ public class Menu {
     System.out.println("  2 - Visualizar filme");
     System.out.println("  3 - Atualizar filme");
     System.out.println("  4 - Excluir filme");
+    System.out.println("  5 - Ordenar (e limpar) registros");
 
     System.out.println("  0 - Sair");
 
@@ -53,6 +54,8 @@ public class Menu {
         case 4:
           deleteMovie();
           break;
+        case 5:
+          sortRegisters();
         case 0:
           return;
         default:
@@ -177,5 +180,9 @@ public class Menu {
     } else {
       System.out.println("O filme não foi excluído.");
     }
+  }
+
+  private void sortRegisters() {
+    // Database.sort(2, 3);
   }
 }
