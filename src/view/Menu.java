@@ -56,6 +56,7 @@ public class Menu {
           break;
         case 5:
           sortRegisters();
+          break;
         case 0:
           return;
         default:
@@ -183,6 +184,6 @@ public class Menu {
   }
 
   private void sortRegisters() {
-    // Database.sort(2, 3);
+    Database.sort();
   }
 }

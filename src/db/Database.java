@@ -2,7 +2,6 @@ package db;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Arrays;
 
 import model.Movie;
 import sort.Heap;
@@ -193,6 +192,7 @@ public class Database {
   public static void sort() {
     RandomAccessFile[] files = new RandomAccessFile[sortPaths];
     Heap movies = new Heap(sortImMemoryRegs);
+    int segment = 0;
 
     try {
       RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
@@ -206,8 +206,36 @@ public class Database {
       // fills heap with initial registers
       movies.fill(data);
 
+      // while heap has elements
+      while (movies.hasElements()) {
+        Movie movie = movies.remove().getMovie();
+        int lastMovieId = movie.getId();
+
+        // add to temp file
 
 
+        // if has more register, add to heap
+        if (data.getFilePointer() < data.length()) {
+          boolean lapide = data.readBoolean();
+          int len = data.readInt();
+
+          if (!lapide) {
+            byte[] byteArrayMovie = new byte[len];
+            data.read(byteArrayMovie);
+
+            Movie newMovie = new Movie(byteArrayMovie);
+
+            // TODO - improve this code (has bug)
+            // if new movie id is less than last, change for the next segment
+            segment = newMovie.getId() < lastMovieId ? segment++ : segment;
+
+            movies.insert(newMovie, segment);
+          } else {
+            data.skipBytes(len);
+          }
+        }
+
+      }
 
       data.close();
     } catch (IOException e) {
