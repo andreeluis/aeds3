@@ -21,7 +21,7 @@ public class Heap {
   }
 
   public void fill(RandomAccessFile file) throws IOException {
-    for (int i = 0; i < length && file.getFilePointer() < file.length(); i++) {
+    while (elements < length && file.getFilePointer() < file.length()) {
       boolean lapide = file.readBoolean();
       int len = file.readInt();
 
@@ -91,5 +91,21 @@ public class Heap {
 
   private int rightChild(int i) {
     return (2 * i) + 1;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder string = new StringBuilder();
+    for (int i = 1; i <= elements; i++) {
+      string.append(movies[i]);
+      //string.append(movies[i].getMovie().getTitle());
+      string.append(", ");
+    }
+
+    if (elements > 0) {
+      string.deleteCharAt(string.length() - 2);
+    }
+
+    return "[" + string.toString() + "]";
   }
 }

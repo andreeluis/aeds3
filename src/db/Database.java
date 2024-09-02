@@ -5,6 +5,7 @@ import java.io.RandomAccessFile;
 
 import model.Movie;
 import sort.Heap;
+import sort.HeapNode;
 
 public class Database {
   // Estrutura do arquivo sequencial
@@ -12,8 +13,8 @@ public class Database {
   private static String fileExtension = ".aeds3";
   private static String filePath = "./db/dados";
   private static String defaultDBPath = filePath + fileExtension;
-  private static int sortPaths = 3;
-  private static int sortImMemoryRegs = 10;
+  private static int sortPaths = 2;
+  private static int sortImMemoryRegs = 3;
 
   public static void create(Movie movie) {
     try {
@@ -192,7 +193,6 @@ public class Database {
   public static void sort() {
     RandomAccessFile[] files = new RandomAccessFile[sortPaths];
     Heap movies = new Heap(sortImMemoryRegs);
-    int segment = 0;
 
     try {
       RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
@@ -201,6 +201,7 @@ public class Database {
       for (int i = 0; i < sortPaths; i++) {
         String tmpFilePath = filePath + i + fileExtension;
         files[i] = new RandomAccessFile(tmpFilePath, "rw");
+        files[i].setLength(0);
       }
 
       // fills heap with initial registers
@@ -208,34 +209,47 @@ public class Database {
 
       // while heap has elements
       while (movies.hasElements()) {
-        Movie movie = movies.remove().getMovie();
+        // remove from heap
+        HeapNode heapNode = movies.remove();
+        int segment = heapNode.getSegment();
+        Movie movie = heapNode.getMovie();
         int lastMovieId = movie.getId();
 
         // add to temp file
+        int file = segment % sortPaths;
+        files[file].seek(files[file].length());
 
+        byte[] byteArrayMovie = movie.toByteArray();
+        files[file].writeBoolean(false); // lapide
+        files[file].writeInt(byteArrayMovie.length); // tam registro
+        files[file].write(byteArrayMovie); // registro
 
         // if has more register, add to heap
-        if (data.getFilePointer() < data.length()) {
+        boolean addded = false;
+        while (!addded && data.getFilePointer() < data.length()) {
           boolean lapide = data.readBoolean();
           int len = data.readInt();
 
           if (!lapide) {
-            byte[] byteArrayMovie = new byte[len];
+            addded = true;
+
+            byteArrayMovie = new byte[len];
             data.read(byteArrayMovie);
 
             Movie newMovie = new Movie(byteArrayMovie);
-
-            // TODO - improve this code (has bug)
             // if new movie id is less than last, change for the next segment
-            segment = newMovie.getId() < lastMovieId ? segment++ : segment;
+            if (newMovie.getId() < lastMovieId)
+              movies.insert(newMovie, segment + 1);
+            else
+              movies.insert(newMovie, segment);
 
-            movies.insert(newMovie, segment);
           } else {
             data.skipBytes(len);
           }
         }
-
       }
+
+      // TODO - delete temp files
 
       data.close();
     } catch (IOException e) {

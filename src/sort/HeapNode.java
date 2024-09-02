@@ -27,4 +27,9 @@ public class HeapNode implements Comparable<HeapNode> {
       return this.getMovie().compareTo(other.getMovie());
     }
   }
+
+  @Override
+  public String toString() {
+    return "<" + this.getSegment() + ":" + this.movie.getId() + ">";
+  }
 }
