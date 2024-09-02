@@ -13,21 +13,29 @@ import sort.Sort;
 public class Database {
   private static final String fileExtension = ".aeds3";
   private String filePath;
-
   private RandomAccessFile database;
-  private Sort sort;
+
+  public static String getFileExtension() {
+    return fileExtension;
+  }
+
+  public String getFilePath() {
+    return filePath;
+  }
 
   public void setFilePath(String filePath) {
     this.filePath = filePath;
   }
 
-  public Database(String filePath, Sort sort) throws FileNotFoundException {
+  public RandomAccessFile getDatabase() {
+    return this.database;
+  }
+
+  public Database(String filePath) throws FileNotFoundException {
     setFilePath(filePath);
 
     String dbFilePath = this.filePath + fileExtension;
     this.database = new RandomAccessFile(dbFilePath, "rw");
-
-    this.sort = sort;
 
     try {
       if (database.length() == 0) {
@@ -195,20 +203,39 @@ public class Database {
 
   public void sortRegisters() {
     try {
-      // skips the lastId
-      database.seek(0);
-      database.readInt();
+      Sort sort = new Sort(this);
+      int segments;
 
-      this.sort.createTmpFiles(filePath, fileExtension);
-      this.sort.distribution(database);
+      do {
+        segments = sort.distribution();
+        System.out.println("distri");
+
+        System.out.println(segments + " - inter");
+        sort.intercalation();
+      } while (segments > 2);
 
     } catch (IOException e) {
       System.out.println("Erro ao ordenar registros.");
-      System.out.println(e);
+      System.out.println(e.getMessage());
+      System.out.println(e.getCause());
+      System.out.println(e.getStackTrace());
     }
   }
 
-  private boolean isEndOfFile() throws IOException {
+  public boolean isEndOfFile() throws IOException {
     return !(database.getFilePointer() < database.length());
+  }
+
+  /**
+   * @throws IOException
+   * Clean registers and keep lastId
+   */
+  public void cleanDatabaseRegisters() throws IOException {
+    // reads the lastId
+    database.seek(0);
+    int lastId = database.readInt();
+
+    database.setLength(0);
+    database.writeInt(lastId);
   }
 }
