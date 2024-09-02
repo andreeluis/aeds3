@@ -10,12 +10,14 @@ import util.ParseUtil;
 
 public class Menu {
   private static Scanner sc = new Scanner(System.in);
+  private Database database;
 
-  public Menu() {
+  public Menu(Database database) {
+    this.database = database;
     menu();
   }
 
-  private void showMenu() {
+  private static void showMenu() {
     // limpa o terminal
     System.out.print("\033[H\033[2J");
     System.out.flush();
@@ -83,7 +85,7 @@ public class Menu {
         Movie movie = new Movie(csvScanner.nextLine());
 
         // Escrita
-        Database.create(movie);
+        database.create(movie);
       }
 
       csvScanner.close();
@@ -93,12 +95,12 @@ public class Menu {
     }
   }
 
-  private static void findMovie() {
+  private void findMovie() {
     System.out.print("Qual ID do filme buscado? ");
     int id = sc.nextInt();
     sc.nextLine(); // Limpa o buffer
 
-    Movie movie = Database.read(id);
+    Movie movie = database.read(id);
 
     if (movie != null) {
       System.out.println(movie);
@@ -111,7 +113,7 @@ public class Menu {
     System.out.print("Qual o ID do filme a ser alterado? ");
     int id = sc.nextInt();
     sc.nextLine(); // Limpa o buffer
-    Movie movie = Database.read(id);
+    Movie movie = database.read(id);
 
     if (movie != null) {
       // Recebe novos dados
@@ -157,7 +159,7 @@ public class Menu {
       movie.setLicense(sc.nextLine());
 
       // atualiza o filme
-      movie = Database.update(id, movie);
+      movie = database.update(id, movie);
 
       if (movie != null) {
         System.out.println("Filme " + movie + " atualizado com sucesso!");
@@ -174,7 +176,7 @@ public class Menu {
     int id = sc.nextInt();
     sc.nextLine(); // Limpa o buffer
 
-    Movie movie = Database.delete(id);
+    Movie movie = database.delete(id);
 
     if (movie != null) {
       System.out.println("Filme " + movie + " excluído com sucesso!");
@@ -184,6 +186,6 @@ public class Menu {
   }
 
   private void sortRegisters() {
-    Database.sort();
+    database.sortRegisters();
   }
 }

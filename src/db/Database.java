@@ -1,259 +1,214 @@
 package db;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import model.Movie;
-import sort.Heap;
-import sort.HeapNode;
+import sort.Sort;
+
+// Estrutura do arquivo sequencial
+// LAST_ID; [lapide1; tam1; id1; reg1]; [lapide2; tam2; id2; reg2];
 
 public class Database {
-  // Estrutura do arquivo sequencial
-  // LAST_ID; [lapide1; tam1; id1; reg1]; [lapide2; tam2; id2; reg2];
-  private static String fileExtension = ".aeds3";
-  private static String filePath = "./db/dados";
-  private static String defaultDBPath = filePath + fileExtension;
-  private static int sortPaths = 2;
-  private static int sortImMemoryRegs = 3;
+  private static final String fileExtension = ".aeds3";
+  private String filePath;
 
-  public static void create(Movie movie) {
+  private RandomAccessFile database;
+  private Sort sort;
+
+  public void setFilePath(String filePath) {
+    this.filePath = filePath;
+  }
+
+  public Database(String filePath, Sort sort) throws FileNotFoundException {
+    setFilePath(filePath);
+
+    String dbFilePath = this.filePath + fileExtension;
+    this.database = new RandomAccessFile(dbFilePath, "rw");
+
+    this.sort = sort;
+
     try {
-      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
-
-      // criação do arquivo
-      if (data.length() == 0) {
-        data.writeInt(-1);
-        data.seek(0);
+      if (database.length() == 0) {
+        database.writeInt(-1);
+        database.seek(0);
       }
-
-      // le o lastId e atribui id ao filme
-      int lastId = data.readInt();
-      movie.setId(++lastId);
-
-      // atualiza o lastId
-      data.seek(0);
-      data.writeInt(lastId);
-
-      // escreve o filme no final do arquivo
-      data.seek(data.length());
-
-      byte[] byteArrayMovie = movie.toByteArray();
-      data.writeBoolean(false); // lapide
-      data.writeInt(byteArrayMovie.length); // tam registro
-      data.write(byteArrayMovie); // registro
-
-      data.close();
     } catch (IOException e) {
-      System.out.println("Erro ao criar o arquivo de banco de dados. " + e);
+      System.out.println("Erro ao criar o arquivo de banco de dados.");
+      System.out.println(e);
     }
   }
 
-  public static Movie read(int id) {
+  public void create(Movie movie) {
+    try {
+      // reads the lastId and assigns it to the new register
+      database.seek(0);
+      int lastId = database.readInt();
+      movie.setId(++lastId);
+
+      // updates lastId
+      database.seek(0);
+      database.writeInt(lastId);
+
+      // go to end of file
+      database.seek(database.length());
+
+      // write register
+      byte[] byteArrayMovie = movie.toByteArray();
+      database.writeBoolean(false); // tombstone
+      database.writeInt(byteArrayMovie.length); // registerLength
+      database.write(byteArrayMovie); // register
+    } catch (IOException e) {
+      System.out.println("Erro ao escrever novo registro.");
+      System.out.println(e);
+    }
+  }
+
+  public Movie read(int id) {
     Movie movie = null;
     boolean found = false;
 
     try {
-      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "r");
+      // reads the lastId
+      database.seek(0);
+      int lastId = database.readInt();
 
-      // lastId
-      int lastId = data.readInt();
+      while (!found && !isEndOfFile() && id <= lastId) {
+        boolean tombstone = database.readBoolean();
+        int registerLength = database.readInt();
 
-      if (id <= lastId) {
-        do {
-          boolean lapide = data.readBoolean();
-          int len = data.readInt();
+        if (!tombstone) {
+          byte[] byteArrayMovie = new byte[registerLength];
+          database.read(byteArrayMovie);
+          movie = new Movie(byteArrayMovie);
 
-          if (!lapide) {
-            byte[] byteArrayMovie = new byte[len];
-            data.read(byteArrayMovie);
-
-            movie = new Movie(byteArrayMovie);
-            if (movie.getId() == id) {
-              found = true;
-            }
-          } else {
-            data.skipBytes(len);
-          }
-        } while (!found && data.getFilePointer() < data.length());
+          found = movie.getId() == id;
+        } else {
+          database.skipBytes(registerLength);
+        }
       }
-
-      data.close();
     } catch (IOException e) {
-      System.out.println("Erro ao buscar registro. " + e);
+      System.out.println("Erro ao buscar registro.");
+      System.out.println(e);
     }
 
     return found ? movie : null;
   }
 
-  public static Movie update(int id, Movie movie) {
+  public Movie update(int id, Movie newMovie) {
     boolean updated = false;
 
     try {
-      byte[] newByteArrayMovie = movie.toByteArray();
-      int newLen = newByteArrayMovie.length;
+      // reads the lastId
+      database.seek(0);
+      int lastId = database.readInt();
 
-      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
+      while (!updated && !isEndOfFile() && id <= lastId) {
+        // save tombstone position
+        long tombstonePosition = database.getFilePointer();
 
-      // lastId
-      int lastId = data.readInt();
+        boolean tombstone = database.readBoolean();
+        int length = database.readInt();
 
-      if (id <= lastId) {
-        do {
-          // salva a posição da lapide
-          long lapidePosition = data.getFilePointer();
+        if (!tombstone) {
+          byte[] byteArrayMovie = new byte[length];
+          database.read(byteArrayMovie);
 
-          boolean lapide = data.readBoolean();
-          int len = data.readInt();
+          Movie movie = new Movie(byteArrayMovie);
+          if (movie.getId() == id) {
+            byte[] newByteArrayMovie = newMovie.toByteArray();
+            int newLength = newByteArrayMovie.length;
 
-          if (!lapide) {
-            byte[] byteArrayMovie = new byte[len];
-            data.read(byteArrayMovie);
+            // go to tombstonePosition
+            database.seek(tombstonePosition);
 
-            Movie newMovie = new Movie(byteArrayMovie);
+            if (newLength > length) {
+              // set tombstone to true and go to end of file
+              database.writeBoolean(true);
+              database.seek(database.length());
 
-            if (newMovie.getId() == id) {
-              // posiciona na lapide
-              data.seek(lapidePosition);
-
-              // caso o novo registro seja maior
-              if (newLen > len) {
-                data.writeBoolean(true);
-
-                // move para o final do arquivo
-                data.seek(data.length());
-
-                data.writeBoolean(false); // lapide
-                data.writeInt(newByteArrayMovie.length); // tam registro
-                data.write(newByteArrayMovie); // registro
-              } else {
-                data.writeBoolean(false); // lapide
-                data.writeInt(len); // tam registro
-                data.write(newByteArrayMovie); // registro
-              }
-
-              updated = true;
+              // write new register at end of file
+              database.writeBoolean(false); // tombstone
+              database.writeInt(newByteArrayMovie.length); // registerLength
+              database.write(newByteArrayMovie); // register
+            } else {
+              database.writeBoolean(false); // tombstone
+              database.writeInt(length); // registerLength
+              database.write(newByteArrayMovie); // register
             }
-          } else {
-            data.skipBytes(len);
-          }
-        } while (!updated && data.getFilePointer() < data.length());
-      }
 
-      data.close();
+            updated = true;
+          }
+        } else {
+          database.skipBytes(length);
+        }
+      }
     } catch (IOException e) {
-      System.out.println("Erro ao atualizar registro. " + e);
+      System.out.println("Erro ao atualizar registro.");
+      System.out.println(e);
     }
 
-    return updated ? movie : null;
+    return updated ? newMovie : null;
   }
 
-  public static Movie delete(int id) {
-    boolean deleted = false;
+  public Movie delete(int id) {
     Movie movie = null;
+    boolean deleted = false;
 
     try {
-      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
+      // reads the lastId
+      database.seek(0);
+      int lastId = database.readInt();
 
-      // lastId
-      int lastId = data.readInt();
+      while (!deleted && !isEndOfFile() && id <= lastId) {
+        // save tombstone position
+        long tombstonePosition = database.getFilePointer();
 
-      if (id <= lastId) {
-        do {
-          // salva a posição da lapide
-          long lapidePosition = data.getFilePointer();
+        boolean tombstone = database.readBoolean();
+        int registerLength = database.readInt();
 
-          boolean lapide = data.readBoolean();
-          int len = data.readInt();
+        if (!tombstone) {
+          byte[] byteArrayMovie = new byte[registerLength];
+          database.read(byteArrayMovie);
 
-          if (!lapide) {
-            byte[] byteArrayMovie = new byte[len];
-            data.read(byteArrayMovie);
+          movie = new Movie(byteArrayMovie);
 
-            movie = new Movie(byteArrayMovie);
+          if (movie.getId() == id) {
+            // go to tombstonePosition and set it to true
+            database.seek(tombstonePosition);
+            database.writeBoolean(true);
 
-            if (movie.getId() == id) {
-              data.seek(lapidePosition);
-              data.writeBoolean(true);
-              deleted = true;
-            }
-          } else {
-            data.skipBytes(len);
+            deleted = true;
           }
-        } while (!deleted && data.getFilePointer() < data.length());
+        } else {
+          database.skipBytes(registerLength);
+        }
       }
-
-      data.close();
     } catch (IOException e) {
-      System.out.println("Erro ao excluir registro. " + e);
+      System.out.println("Erro ao excluir registro.");
+      System.out.println(e);
     }
 
     return deleted ? movie : null;
   }
 
-  public static void sort() {
-    RandomAccessFile[] files = new RandomAccessFile[sortPaths];
-    Heap movies = new Heap(sortImMemoryRegs);
-
+  public void sortRegisters() {
     try {
-      RandomAccessFile data = new RandomAccessFile(defaultDBPath, "rw");
-      data.readInt(); // skip lastId
+      // skips the lastId
+      database.seek(0);
+      database.readInt();
 
-      for (int i = 0; i < sortPaths; i++) {
-        String tmpFilePath = filePath + i + fileExtension;
-        files[i] = new RandomAccessFile(tmpFilePath, "rw");
-        files[i].setLength(0);
-      }
+      this.sort.createTmpFiles(filePath, fileExtension);
+      this.sort.distribution(database);
 
-      // fills heap with initial registers
-      movies.fill(data);
-
-      // while heap has elements
-      while (movies.hasElements()) {
-        // remove from heap
-        HeapNode heapNode = movies.remove();
-        int segment = heapNode.getSegment();
-        Movie movie = heapNode.getMovie();
-        int lastMovieId = movie.getId();
-
-        // add to temp file
-        int file = segment % sortPaths;
-        files[file].seek(files[file].length());
-
-        byte[] byteArrayMovie = movie.toByteArray();
-        files[file].writeBoolean(false); // lapide
-        files[file].writeInt(byteArrayMovie.length); // tam registro
-        files[file].write(byteArrayMovie); // registro
-
-        // if has more register, add to heap
-        boolean addded = false;
-        while (!addded && data.getFilePointer() < data.length()) {
-          boolean lapide = data.readBoolean();
-          int len = data.readInt();
-
-          if (!lapide) {
-            addded = true;
-
-            byteArrayMovie = new byte[len];
-            data.read(byteArrayMovie);
-
-            Movie newMovie = new Movie(byteArrayMovie);
-            // if new movie id is less than last, change for the next segment
-            if (newMovie.getId() < lastMovieId)
-              movies.insert(newMovie, segment + 1);
-            else
-              movies.insert(newMovie, segment);
-
-          } else {
-            data.skipBytes(len);
-          }
-        }
-      }
-
-      // TODO - delete temp files
-
-      data.close();
     } catch (IOException e) {
+      System.out.println("Erro ao ordenar registros.");
       System.out.println(e);
     }
+  }
+
+  private boolean isEndOfFile() throws IOException {
+    return !(database.getFilePointer() < database.length());
   }
 }
