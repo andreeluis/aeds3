@@ -232,7 +232,7 @@ public class Database {
         segments = sort.distribution();
 
         sort.intercalation();
-      } while (segments > 2); // 2 segments intercalation makes an final sorted segment
+      } while (segments > sortPathsNumber); // if a path is completed sorted, the next intercalation will result one sorted segment
 
       return true;
     } catch (IOException e) {
