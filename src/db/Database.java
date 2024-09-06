@@ -14,6 +14,8 @@ public class Database {
   private static final String fileExtension = ".aeds3";
   private String filePath;
   private RandomAccessFile database;
+  private int sortPathsNumber;
+  private int sortInMemoryRegisters;
 
   public static String getFileExtension() {
     return fileExtension;
@@ -29,6 +31,26 @@ public class Database {
 
   public RandomAccessFile getDatabase() {
     return this.database;
+  }
+
+  public int getSortPathsNumber() {
+    return sortPathsNumber;
+  }
+
+  public void setSortPathsNumber(int sortPathsNumber) {
+    if (sortPathsNumber > 0) {
+      this.sortPathsNumber = sortPathsNumber;
+    }
+  }
+
+  public int getSortInMemoryRegisters() {
+    return sortInMemoryRegisters;
+  }
+
+  public void setSortInMemoryRegisters(int sortInMemoryRegisters) {
+    if (sortInMemoryRegisters > 0) {
+      this.sortInMemoryRegisters = sortInMemoryRegisters;
+    }
   }
 
   public Database(String filePath) throws FileNotFoundException {
@@ -201,24 +223,21 @@ public class Database {
     return deleted ? movie : null;
   }
 
-  public void sortRegisters() {
+  public boolean sortRegisters() {
     try {
-      Sort sort = new Sort(this);
+      Sort sort = new Sort(this, sortPathsNumber, sortInMemoryRegisters);
       int segments;
 
       do {
         segments = sort.distribution();
-        System.out.println("distri");
 
-        System.out.println(segments + " - inter");
         sort.intercalation();
-      } while (segments > 2);
+      } while (segments > 2); // 2 segments intercalation makes an final sorted segment
 
+      return true;
     } catch (IOException e) {
       System.out.println("Erro ao ordenar registros.");
-      System.out.println(e.getMessage());
-      System.out.println(e.getCause());
-      System.out.println(e.getStackTrace());
+      return false;
     }
   }
 

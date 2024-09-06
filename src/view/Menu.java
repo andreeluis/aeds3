@@ -186,6 +186,16 @@ public class Menu {
   }
 
   private void sortRegisters() {
-    database.sortRegisters();
+    System.out.print("Quantos caminhos (arquivos temporários) para a ordenação? ");
+    database.setSortPathsNumber(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("Quantos registros em memória primária para a ordenação? ");
+    database.setSortInMemoryRegisters(ParseUtil.parseInt(sc.nextLine()));
+
+    if (database.sortRegisters()) {
+      System.out.println("Registros ordenados com sucesso!");
+    } else {
+      System.out.println("Os registros não foram ordenados.");
+    }
   }
 }

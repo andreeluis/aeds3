@@ -8,17 +8,31 @@ import db.Database;
 import model.Movie;
 
 public class Sort {
-  private static int pathsNumber = 2;
-  private static int inMemoryRegisters = 4;
+  private int pathsNumber = 3; // default pathsNumber
+  private int inMemoryRegisters = 5; // default inMemoryRegisters
   private RandomAccessFile[] tmpFiles;
   private Database database;
   private Heap moviesHeap;
 
-  public Sort(Database database) throws IOException {
+  public void setPathsNumber(int pathsNumber) {
+    if (pathsNumber > 0) {
+      this.pathsNumber = pathsNumber;
+    }
+  }
+
+  public void setInMemoryRegisters(int inMemoryRegisters) {
+    if (inMemoryRegisters > 0) {
+      this.inMemoryRegisters = inMemoryRegisters;
+    }
+  }
+
+  public Sort(Database database, int pathsNumber, int inMemoryRegisters) throws IOException {
     this.database = database;
+    setPathsNumber(pathsNumber);
+    setInMemoryRegisters(inMemoryRegisters);
 
     // starts and fill moviesHeap
-    moviesHeap = new Heap(inMemoryRegisters);
+    moviesHeap = new Heap(this.inMemoryRegisters);
   }
 
   private void openTmpFiles() throws IOException {
