@@ -28,6 +28,9 @@ The dataset used in the projects is available at [Kaggle](https://www.kaggle.com
 ## TPs
 The projects are divided into the following TPs:
 - [TP 01](tp01): Creation of a database, manipulation of a sequential file and external sorting
+
+	Presentation video on [YouTube](https://www.youtube.com/watch?v=ulDujdI2U3I).
+
 - [TP 02](tp02): File Indexing Manipulation with B+ Tree, Hash and Inverted List
 - [TP 03](tp03): Huffman and LZW compression
 - [TP 04](tp04): Pattern Matching and Cryptography
