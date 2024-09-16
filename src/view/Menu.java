@@ -29,6 +29,7 @@ public class Menu {
     System.out.println("  3 - Atualizar filme");
     System.out.println("  4 - Excluir filme");
     System.out.println("  5 - Ordenar (e limpar) registros");
+    System.out.println("  6 - Operações com índice");
 
     System.out.println("  0 - Sair");
 
@@ -58,6 +59,9 @@ public class Menu {
           break;
         case 5:
           sortRegisters();
+          break;
+        case 6:
+          index();
           break;
         case 0:
           return;
@@ -197,5 +201,9 @@ public class Menu {
     } else {
       System.out.println("Os registros não foram ordenados.");
     }
+  }
+
+  private void index() {
+    
   }
 }

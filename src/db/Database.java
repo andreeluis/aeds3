@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import index.Index;
 import model.Movie;
 import sort.Sort;
 
@@ -16,6 +17,7 @@ public class Database {
   private RandomAccessFile database;
   private int sortPathsNumber;
   private int sortInMemoryRegisters;
+  private Index index;
 
   public static String getFileExtension() {
     return fileExtension;
@@ -68,6 +70,8 @@ public class Database {
       System.out.println("Erro ao criar o arquivo de banco de dados.");
       System.out.println(e);
     }
+
+    // TODO - start index
   }
 
   public void create(Movie movie) {
@@ -89,6 +93,9 @@ public class Database {
       database.writeBoolean(false); // tombstone
       database.writeInt(byteArrayMovie.length); // registerLength
       database.write(byteArrayMovie); // register
+
+      // TODO - add to index
+      // index.add(lastId, database.length() - byteArrayMovie.length);
     } catch (IOException e) {
       System.out.println("Erro ao escrever novo registro.");
       System.out.println(e);
@@ -96,6 +103,8 @@ public class Database {
   }
 
   public Movie read(int id) {
+    // TODO - get by index
+
     Movie movie = null;
     boolean found = false;
 
@@ -127,6 +136,8 @@ public class Database {
   }
 
   public Movie update(int id, Movie newMovie) {
+    // TODO - get by index
+
     boolean updated = false;
 
     try {
@@ -174,6 +185,8 @@ public class Database {
           database.skipBytes(length);
         }
       }
+
+      // TODO - update to index
     } catch (IOException e) {
       System.out.println("Erro ao atualizar registro.");
       System.out.println(e);
@@ -215,6 +228,8 @@ public class Database {
           database.skipBytes(registerLength);
         }
       }
+
+      // TODO - delete from index
     } catch (IOException e) {
       System.out.println("Erro ao excluir registro.");
       System.out.println(e);
@@ -235,6 +250,8 @@ public class Database {
       } while (segments > sortPathsNumber); // if a path is completed sorted, the next intercalation will result one sorted segment
 
       return true;
+
+      // TODO - rebuild index
     } catch (IOException e) {
       System.out.println("Erro ao ordenar registros.");
       return false;
@@ -256,5 +273,7 @@ public class Database {
 
     database.setLength(0);
     database.writeInt(lastId);
+
+    // TODO - remove index
   }
 }
