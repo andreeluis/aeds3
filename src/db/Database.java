@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import index.BStarTree;
 import index.Index;
 import model.Movie;
 import sort.Sort;
@@ -71,7 +72,8 @@ public class Database {
       System.out.println(e);
     }
 
-    // TODO - start index
+    this.index = new Index(this);
+    this.index.addStrategy(new BStarTree("./db/BStarIndex"));
   }
 
   public void create(Movie movie) {
