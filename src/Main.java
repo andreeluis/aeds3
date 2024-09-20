@@ -13,7 +13,7 @@ public class Main {
 
   public static void main(String[] args) {
     indexes = new ArrayList<IndexStrategy>();
-    indexes.add(new BStarTree(dbPath));
+    //indexes.add(new BStarTree(dbPath));
     //indexes.add(new DynamicHash(dbPath));
 
     try {

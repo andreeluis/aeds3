@@ -87,8 +87,9 @@ public class Database {
       database.seek(0);
       database.writeInt(lastId);
 
-      // go to end of file
-      database.seek(database.length());
+      // save positon to insert and go to end of file
+      long position = database.length();
+      database.seek(position);
 
       // write register
       byte[] byteArrayMovie = movie.toByteArray();
@@ -96,8 +97,10 @@ public class Database {
       database.writeInt(byteArrayMovie.length); // registerLength
       database.write(byteArrayMovie); // register
 
-      // TODO - add to index
-      // index.add(lastId, database.length() - byteArrayMovie.length);
+      // add to indexes
+      if (index.isAvailabe()) {
+        index.add(lastId, position);
+      }
     } catch (IOException e) {
       System.out.println("Erro ao escrever novo registro.");
       System.out.println(e);
@@ -105,8 +108,6 @@ public class Database {
   }
 
   public Movie read(int id) {
-    // TODO - get by index
-
     Movie movie = null;
     boolean found = false;
 
@@ -115,18 +116,42 @@ public class Database {
       database.seek(0);
       int lastId = database.readInt();
 
-      while (!found && !isEndOfFile() && id <= lastId) {
-        boolean tombstone = database.readBoolean();
-        int registerLength = database.readInt();
+      // early return
+      if (id > lastId) {
+        return null;
+      }
 
-        if (!tombstone) {
+      if (index.isAvailabe()) {
+        // if has index availabe, get position from index
+        long position = index.get(id);
+
+        if (position != -1) {
+          database.seek(position);
+
+          database.readBoolean(); // skip tombstone (always false)
+          int registerLength = database.readInt();
+
           byte[] byteArrayMovie = new byte[registerLength];
           database.read(byteArrayMovie);
           movie = new Movie(byteArrayMovie);
 
           found = movie.getId() == id;
-        } else {
-          database.skipBytes(registerLength);
+        }
+      } else {
+        // if has no index perform linear search
+        while (!found && !isEndOfFile()) {
+          boolean tombstone = database.readBoolean();
+          int registerLength = database.readInt();
+
+          if (!tombstone) {
+            byte[] byteArrayMovie = new byte[registerLength];
+            database.read(byteArrayMovie);
+            movie = new Movie(byteArrayMovie);
+
+            found = movie.getId() == id;
+          } else {
+            database.skipBytes(registerLength);
+          }
         }
       }
     } catch (IOException e) {
@@ -138,8 +163,6 @@ public class Database {
   }
 
   public Movie update(int id, Movie newMovie) {
-    // TODO - get by index
-
     boolean updated = false;
 
     try {
@@ -147,48 +170,76 @@ public class Database {
       database.seek(0);
       int lastId = database.readInt();
 
-      while (!updated && !isEndOfFile() && id <= lastId) {
-        // save tombstone position
-        long tombstonePosition = database.getFilePointer();
+      // early return
+      if (id > lastId) {
+        return null;
+      }
 
-        boolean tombstone = database.readBoolean();
-        int length = database.readInt();
+      // find register position and lenght
+      long position = -1;
+      int registerLength = -1;
+      boolean found = false;
+      if (index.isAvailabe()) {
+        // if has index availabe, get position from index
+        position = index.get(id);
 
-        if (!tombstone) {
-          byte[] byteArrayMovie = new byte[length];
+        if (position != -1) {
+          database.seek(position);
+
+          database.readBoolean(); // skip tombstone (always false)
+          registerLength = database.readInt();
+
+          byte[] byteArrayMovie = new byte[registerLength];
           database.read(byteArrayMovie);
 
-          Movie movie = new Movie(byteArrayMovie);
-          if (movie.getId() == id) {
-            byte[] newByteArrayMovie = newMovie.toByteArray();
-            int newLength = newByteArrayMovie.length;
+          found = new Movie(byteArrayMovie).getId() == id;
+        }
+      } else {
+        while (!found && !isEndOfFile()) {
+          // if has no index perform linear search
+          position = database.getFilePointer();
+          boolean tombstone = database.readBoolean();
+          registerLength = database.readInt();
 
-            // go to tombstonePosition
-            database.seek(tombstonePosition);
+          if (!tombstone) {
+            byte[] byteArrayMovie = new byte[registerLength];
+            database.read(byteArrayMovie);
 
-            if (newLength > length) {
-              // set tombstone to true and go to end of file
-              database.writeBoolean(true);
-              database.seek(database.length());
-
-              // write new register at end of file
-              database.writeBoolean(false); // tombstone
-              database.writeInt(newByteArrayMovie.length); // registerLength
-              database.write(newByteArrayMovie); // register
-            } else {
-              database.writeBoolean(false); // tombstone
-              database.writeInt(length); // registerLength
-              database.write(newByteArrayMovie); // register
-            }
-
-            updated = true;
+            found = new Movie(byteArrayMovie).getId() == id;
+          } else {
+            database.skipBytes(registerLength);
           }
-        } else {
-          database.skipBytes(length);
         }
       }
 
-      // TODO - update to index
+      // write new register
+      if (found) {
+        byte[] newByteArrayMovie = newMovie.toByteArray();
+        int newLength = newByteArrayMovie.length;
+
+        // go to register position
+        database.seek(position);
+
+        if (newLength > registerLength) {
+          // set tombstone to true and go to end of file
+          database.writeBoolean(true);
+          long newPosition = database.length();
+          database.seek(newPosition);
+
+          // write new register at end of file
+          database.writeBoolean(false); // tombstone
+          database.writeInt(newByteArrayMovie.length); // registerLength
+          database.write(newByteArrayMovie); // register
+
+          index.update(id, newPosition);
+        } else {
+          database.writeBoolean(false); // tombstone
+          database.writeInt(registerLength); // registerLength
+          database.write(newByteArrayMovie); // register
+        }
+
+        updated = true;
+      }
     } catch (IOException e) {
       System.out.println("Erro ao atualizar registro.");
       System.out.println(e);
@@ -206,32 +257,60 @@ public class Database {
       database.seek(0);
       int lastId = database.readInt();
 
-      while (!deleted && !isEndOfFile() && id <= lastId) {
-        // save tombstone position
-        long tombstonePosition = database.getFilePointer();
+      // early return
+      if (id > lastId) {
+        return null;
+      }
 
-        boolean tombstone = database.readBoolean();
-        int registerLength = database.readInt();
+      if (index.isAvailabe()) {
+        // if has index availabe, get position from index
+        long position = index.get(id);
 
-        if (!tombstone) {
+        if (position != -1) {
+          database.seek(position);
+
+          database.readBoolean(); // skip tombstone (always false)
+          int registerLength = database.readInt();
+
           byte[] byteArrayMovie = new byte[registerLength];
           database.read(byteArrayMovie);
 
           movie = new Movie(byteArrayMovie);
 
+
           if (movie.getId() == id) {
-            // go to tombstonePosition and set it to true
-            database.seek(tombstonePosition);
+            database.seek(position);
             database.writeBoolean(true);
+
+            index.remove(id);
 
             deleted = true;
           }
-        } else {
-          database.skipBytes(registerLength);
+        }
+      } else {
+        // if has no index perform linear search
+        while (!deleted && !isEndOfFile()) {
+          long position = database.getFilePointer();
+          boolean tombstone = database.readBoolean();
+          int registerLength = database.readInt();
+
+          if (!tombstone) {
+            byte[] byteArrayMovie = new byte[registerLength];
+            database.read(byteArrayMovie);
+
+            movie = new Movie(byteArrayMovie);
+
+            if (movie.getId() == id) {
+              database.seek(position);
+              database.writeBoolean(true);
+
+              deleted = true;
+            }
+          } else {
+            database.skipBytes(registerLength);
+          }
         }
       }
-
-      // TODO - delete from index
     } catch (IOException e) {
       System.out.println("Erro ao excluir registro.");
       System.out.println(e);
