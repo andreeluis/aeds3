@@ -11,15 +11,19 @@ public class Index {
   private List<IndexStrategy> strategies = new ArrayList<IndexStrategy>();
   private Database database;
 
-  public Index(Database database) {
+  public Index(Database database, List<IndexStrategy> indexes) {
     this.database = database;
+
+    for (IndexStrategy indexStrategy : indexes) {
+      addStrategy(indexStrategy);
+    }
   }
 
-  public void addStrategy(IndexStrategy strategy) {
-    strategies.add(strategy);
+  public void addStrategy(IndexStrategy indexStrategy) {
+    strategies.add(indexStrategy);
 
     try {
-      strategy.build(this.database);
+      indexStrategy.build(this.database);
     } catch (FileNotFoundException e) { }
   }
 

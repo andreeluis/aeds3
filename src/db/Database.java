@@ -3,9 +3,10 @@ package db;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.List;
 
-import index.BStarTree;
 import index.Index;
+import index.IndexStrategy;
 import model.Movie;
 import sort.Sort;
 
@@ -56,10 +57,10 @@ public class Database {
     }
   }
 
-  public Database(String filePath) throws FileNotFoundException {
+  public Database(String filePath, List<IndexStrategy> indexes) throws FileNotFoundException {
     setFilePath(filePath);
 
-    String dbFilePath = this.filePath + fileExtension;
+    String dbFilePath = this.filePath + "dados" + fileExtension;
     this.database = new RandomAccessFile(dbFilePath, "rw");
 
     try {
@@ -72,8 +73,7 @@ public class Database {
       System.out.println(e);
     }
 
-    this.index = new Index(this);
-    this.index.addStrategy(new BStarTree("./db/BStarIndex"));
+    this.index = new Index(this, indexes);
   }
 
   public void create(Movie movie) {
@@ -242,7 +242,7 @@ public class Database {
 
   public boolean sortRegisters() {
     try {
-      Sort sort = new Sort(this, sortPathsNumber, sortInMemoryRegisters);
+      Sort sort = new Sort(this);
       int segments;
 
       do {
@@ -265,7 +265,6 @@ public class Database {
   }
 
   /**
-   * @throws IOException
    * Clean registers and keep lastId
    */
   public void cleanDatabaseRegisters() throws IOException {

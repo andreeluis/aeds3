@@ -10,7 +10,8 @@ import db.Database;
 import model.Movie;
 
 public class BStarTree implements IndexStrategy {
-  private String filePath = "btree";
+  private String filePath;
+  private static final String fileName = "BStarIndex";
   private RandomAccessFile indexFile;
 
   public String getFilePath() {
@@ -27,7 +28,7 @@ public class BStarTree implements IndexStrategy {
 
   @Override
   public void build(Database database) throws FileNotFoundException {
-    String indexFilePath = this.filePath + Database.getFileExtension();
+    String indexFilePath = this.filePath + fileName + Database.getFileExtension();
     this.indexFile = new RandomAccessFile(indexFilePath, "rw");
 
     try {

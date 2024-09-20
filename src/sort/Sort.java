@@ -26,17 +26,18 @@ public class Sort {
     }
   }
 
-  public Sort(Database database, int pathsNumber, int inMemoryRegisters) throws IOException {
+  public Sort(Database database) throws IOException {
     this.database = database;
-    setPathsNumber(pathsNumber);
-    setInMemoryRegisters(inMemoryRegisters);
+
+    setPathsNumber(database.getSortPathsNumber());
+    setInMemoryRegisters(database.getSortInMemoryRegisters());
 
     // starts and fill moviesHeap
     moviesHeap = new Heap(this.inMemoryRegisters);
   }
 
   private void openTmpFiles() throws IOException {
-    String filePath = database.getFilePath();
+    String filePath = database.getFilePath() + "tmp";
     String fileExtension = Database.getFileExtension();
 
     tmpFiles = new RandomAccessFile[pathsNumber];
