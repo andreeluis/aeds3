@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
-import index.BStarTree;
+import index.BPlusTree;
 import index.IndexStrategy;
 import view.Menu;
 
@@ -13,7 +13,7 @@ public class Main {
 
   public static void main(String[] args) {
     indexes = new ArrayList<IndexStrategy>();
-    //indexes.add(new BStarTree(dbPath));
+    //indexes.add(new BPlusTree(dbPath));
     //indexes.add(new DynamicHash(dbPath));
 
     try {
@@ -24,6 +24,5 @@ public class Main {
       System.out.println("Arquivo não encontrado.");
       System.out.println(e);
     }
-
   }
 }

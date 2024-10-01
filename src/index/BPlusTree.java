@@ -1,18 +1,63 @@
 package index;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-
-import javax.xml.crypto.Data;
+import java.util.ArrayList;
+import java.util.List;
 
 import db.Database;
 import model.Movie;
 
-public class BStarTree implements IndexStrategy {
+class BPlusTreePage {
+  private boolean leaf;
+  private List<Integer> keys;
+  private List<BPlusTreePage> children;
+  private BPlusTreePage next;
+
+  public boolean isLeaf() {
+    return leaf;
+  }
+
+  public BPlusTreePage() {
+    this(true);
+  }
+
+  public BPlusTreePage(boolean leaf) {
+    this.leaf = leaf;
+    this.keys = new ArrayList<>();
+    this.children = new ArrayList<>();
+    this.next = null;
+  }
+
+  public BPlusTreePage(byte[] byteArray) throws IOException {
+    ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
+    DataInputStream data = new DataInputStream(input);
+
+    // TODO
+  }
+
+  public byte[] toByteArray() throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    DataOutputStream data = new DataOutputStream(output);
+
+    // TODO
+
+    return output.toByteArray();
+  }
+}
+
+public class BPlusTree implements IndexStrategy {
   private String filePath;
   private static final String fileName = "BStarIndex";
   private RandomAccessFile indexFile;
+
+  private BPlusTreePage root;
+  private int order;
 
   public String getFilePath() {
     return filePath;
@@ -22,8 +67,31 @@ public class BStarTree implements IndexStrategy {
     this.filePath = filePath;
   }
 
-  public BStarTree(String filePath) {
+  public BPlusTreePage getRoot() {
+    return root;
+  }
+
+  public void setRoot(BPlusTreePage root) {
+    this.root = root;
+  }
+
+  public int getOrder() {
+    return order;
+  }
+
+  public void setOrder(int order) {
+    if (order >= 3) {
+      this.order = order;
+    } else {
+      System.out.println("A ordem precisa ser no minimo 3!");
+      this.order = 3;
+    }
+  }
+
+  public BPlusTree(int order, String filePath) {
     setFilePath(filePath);
+    setOrder(order);
+    setRoot(new BPlusTreePage());
   }
 
   @Override
@@ -65,12 +133,14 @@ public class BStarTree implements IndexStrategy {
 
   @Override
   public void add(int id, long position) throws IOException {
-    // test
-    indexFile.seek(indexFile.length());
 
-    indexFile.writeInt(id);
-    indexFile.writeLong(position);
   }
+
+
+
+
+
+
 
   @Override
   public long get(int id) throws IOException {
@@ -88,5 +158,11 @@ public class BStarTree implements IndexStrategy {
   public void clear() throws IOException {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'clear'");
+  }
+
+
+  private long savePageToFile(BPlusTreePage page) throws IOException {
+    // TODO
+    throw new UnsupportedOperationException("Unimplemented method 'savePageToFile'");
   }
 }
