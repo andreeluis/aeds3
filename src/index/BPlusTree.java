@@ -9,34 +9,99 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import db.Database;
 import model.Movie;
 
-class BPlusTreePage {
+class BPlusPage {
+  public List<Integer> keys = new ArrayList<>();
+  public List<Long> positions = new ArrayList<>();
+  public List<BPlusPage> children = new ArrayList<>();
+  private int order;
   private boolean leaf;
-  private List<Integer> keys;
-  private List<BPlusTreePage> children;
-  private BPlusTreePage next;
 
-  public boolean isLeaf() {
-    return leaf;
-  }
-
-  public BPlusTreePage() {
-    this(true);
-  }
-
-  public BPlusTreePage(boolean leaf) {
+  public BPlusPage(int order, boolean leaf) {
+    this.order = order;
     this.leaf = leaf;
-    this.keys = new ArrayList<>();
-    this.children = new ArrayList<>();
-    this.next = null;
   }
 
-  public BPlusTreePage(byte[] byteArray) throws IOException {
+  public BPlusPage insert(int key, long position) {
+    if (leaf) {
+      return insertInLeaf(key, position);
+    } else {
+      return insertInInternal(key, position);
+    }
+  }
+
+  private BPlusPage insertInLeaf(int key, long position) {
+    int index = 0;
+
+    while (index < keys.size() && keys.get(index) < key) {
+      index++;
+    }
+
+    keys.add(index, key);
+    positions.add(index, position);
+
+    if (keys.size() > order - 1) {
+      return split();
+    }
+
+    return null;
+  }
+
+  private BPlusPage insertInInternal(int key, long position) {
+    int index = 0;
+
+    while (index < keys.size() && keys.get(index) < key) {
+      index++;
+    }
+
+    BPlusPage newNode = children.get(index).insert(key, position);
+
+    if (newNode != null) {
+      keys.add(index, newNode.getFirstKey());
+      children.add(index + 1, newNode);
+    }
+
+    if (keys.size() > order - 1) {
+      return split();
+    }
+
+    return null;
+  }
+
+  private BPlusPage split() {
+    BPlusPage newNode = new BPlusPage(order, leaf);
+    int midIndex = keys.size() / 2;
+
+    // Mover metade das chaves e posições para o novo nó
+    newNode.keys.addAll(keys.subList(midIndex, keys.size()));
+    newNode.positions.addAll(positions.subList(midIndex, positions.size()));
+
+    // Remover as chaves e posições do nó atual
+    keys.subList(midIndex, keys.size()).clear();
+    positions.subList(midIndex, positions.size()).clear();
+
+    if (!leaf) {
+      newNode.children.addAll(children.subList(midIndex + 1, children.size()));
+      children.subList(midIndex + 1, children.size()).clear();
+    }
+
+    return newNode;
+  }
+
+  public Integer getFirstKey() {
+    return keys.isEmpty() ? null : keys.get(0);
+  }
+
+  public BPlusPage(byte[] byteArray) throws IOException {
     ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
     DataInputStream data = new DataInputStream(input);
+
+    // [qt, p0, id0, pos0, p1, ... , idn, posn, pn+1]
+    // [int] + n[int] + 2n[long] + 1[long]
 
     // TODO
   }
@@ -56,7 +121,7 @@ public class BPlusTree implements IndexStrategy {
   private static final String fileName = "BStarIndex";
   private RandomAccessFile indexFile;
 
-  private BPlusTreePage root;
+  private BPlusPage root;
   private int order;
 
   public String getFilePath() {
@@ -67,11 +132,11 @@ public class BPlusTree implements IndexStrategy {
     this.filePath = filePath;
   }
 
-  public BPlusTreePage getRoot() {
+  public BPlusPage getRoot() {
     return root;
   }
 
-  public void setRoot(BPlusTreePage root) {
+  public void setRoot(BPlusPage root) {
     this.root = root;
   }
 
@@ -91,7 +156,7 @@ public class BPlusTree implements IndexStrategy {
   public BPlusTree(int order, String filePath) {
     setFilePath(filePath);
     setOrder(order);
-    setRoot(new BPlusTreePage());
+    setRoot(new BPlusPage(order, true));
   }
 
   @Override
@@ -133,14 +198,19 @@ public class BPlusTree implements IndexStrategy {
 
   @Override
   public void add(int id, long position) throws IOException {
+    BPlusPage newPage = root.insert(id, position);
 
+    if (newPage != null) {
+      // Se o nó retornado não é nulo, significa que houve divisão do nó raiz
+      BPlusPage newRoot = new BPlusPage(order, false);
+
+      newRoot.keys.add(root.getFirstKey());
+      newRoot.children.add(root);
+      newRoot.children.add(newPage);
+
+      root = newRoot;
+    }
   }
-
-
-
-
-
-
 
   @Override
   public long get(int id) throws IOException {
@@ -160,8 +230,7 @@ public class BPlusTree implements IndexStrategy {
     throw new UnsupportedOperationException("Unimplemented method 'clear'");
   }
 
-
-  private long savePageToFile(BPlusTreePage page) throws IOException {
+  private long savePageToFile(BPlusPage page) throws IOException {
     // TODO
     throw new UnsupportedOperationException("Unimplemented method 'savePageToFile'");
   }
