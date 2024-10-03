@@ -31,7 +31,7 @@ public class Index {
       addStrategy(indexStrategy);
     }
 
-    //currentIndexStrategy = indexes.get(0);
+    currentIndexStrategy = indexes.get(0);
   }
 
   public boolean isAvailabe() {

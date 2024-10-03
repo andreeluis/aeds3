@@ -165,6 +165,8 @@ public class Movie implements Comparable<Movie> {
   public void setReleaseDate(long miliseconds) {
     if (miliseconds >= 0) {
       this.releaseDate = new Date(miliseconds);
+    } else {
+      this.releaseDate = new Date(-1);
     }
   }
 
