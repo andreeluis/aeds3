@@ -1,11 +1,12 @@
 package index;
 
-import db.Database;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+
+import db.Database;
 
 public class ExtendedHash implements IndexStrategy {
 
@@ -15,7 +16,7 @@ public class ExtendedHash implements IndexStrategy {
   private RandomAccessFile dirFile;
   private RandomAccessFile bucketFile;
   private int globalDepth;
-  private static final int BUCKET_SIZE = 4; // Number of entries per bucket
+  private static final int BUCKET_SIZE = 20; // Number of entries per bucket
 
   public ExtendedHash(String filePath) {
     this.filePath = filePath;
@@ -25,28 +26,26 @@ public class ExtendedHash implements IndexStrategy {
   public void build(Database database) throws FileNotFoundException {
     try {
       dirFile = new RandomAccessFile(
-        filePath + dirFileName + database.getFileExtension(),
-        "rw"
-      );
+          filePath + dirFileName + Database.getFileExtension(),
+          "rw");
       bucketFile = new RandomAccessFile(
-        filePath + bucketFileName + database.getFileExtension(),
-        "rw"
-      );
+          filePath + bucketFileName + Database.getFileExtension(),
+          "rw");
 
       if (dirFile.length() == 0) {
         globalDepth = 1;
         dirFile.writeInt(globalDepth);
         dirFile.writeInt(2); // Initial number of buckets
         dirFile.writeLong(0); // Bucket 0 address
-        dirFile.writeLong(BUCKET_SIZE * 12); // Bucket 1 address
+        dirFile.writeLong(8 + BUCKET_SIZE * 12); // Bucket 1 address
 
         // Initialize buckets
         for (int i = 0; i < 2; i++) {
           bucketFile.writeInt(1); // Local depth
           bucketFile.writeInt(0); // Number of entries
           for (int j = 0; j < BUCKET_SIZE; j++) {
-            bucketFile.writeInt(0); // ID
-            bucketFile.writeLong(0); // Position
+            bucketFile.writeInt(-1); // ID
+            bucketFile.writeLong(-1); // Position
           }
         }
       } else {
@@ -94,57 +93,78 @@ public class ExtendedHash implements IndexStrategy {
     }
   }
 
-  private void splitBucket(
-    int bucketIndex,
-    int localDepth,
-    int newId,
-    long newPosition
-  ) throws IOException {
+  private void splitBucket(int bucketIndex, int localDepth, int newId, long newPosition) throws IOException {
     if (localDepth == globalDepth) {
-      // Double directory size
-      int oldSize = 1 << globalDepth;
-      globalDepth++;
-      dirFile.seek(0);
-      dirFile.writeInt(globalDepth);
-      dirFile.writeInt(oldSize * 2);
-
-      for (int i = 0; i < oldSize; i++) {
-        long address = dirFile.readLong();
-        dirFile.seek(dirFile.getFilePointer() + oldSize * 8);
-        dirFile.writeLong(address);
-      }
+      // Double the directory size
+      doubleDirectorySize();
     }
 
-    // Create new bucket
+    // Create a new bucket
     long newBucketAddress = bucketFile.length();
-    bucketFile.seek(newBucketAddress);
-    bucketFile.writeInt(localDepth + 1);
-    bucketFile.writeInt(0);
 
+    // Initialize the new bucket
+    bucketFile.seek(newBucketAddress);
+    bucketFile.writeInt(localDepth + 1); // Local depth
+    bucketFile.writeInt(0); // Number of entries
     for (int i = 0; i < BUCKET_SIZE; i++) {
-      bucketFile.writeInt(0);
-      bucketFile.writeLong(0);
+      bucketFile.writeInt(-1); // ID
+      bucketFile.writeLong(-1); // Position
     }
 
-    // Update directory
-    int mask = 1 << localDepth;
+    // Update the directory
+    updateDirectoryAfterSplit(bucketIndex, localDepth, newBucketAddress);
+
+    // Redistribute entries
+    redistributeEntries(bucketIndex, localDepth, newId, newPosition);
+  }
+
+  private void doubleDirectorySize() throws IOException {
+    int oldSize = 1 << globalDepth;
+    globalDepth++;
+
+    // Update global depth in the directory file
+    dirFile.seek(0);
+    dirFile.writeInt(globalDepth);
+
+    // Update number of buckets
+    dirFile.writeInt(oldSize * 2);
+
+    // Duplicate the bucket addresses
+    for (int i = 0; i < oldSize; i++) {
+      dirFile.seek(8 + i * 8);
+      long address = dirFile.readLong();
+      dirFile.seek(8 + (i + oldSize) * 8);
+      dirFile.writeLong(address);
+    }
+  }
+
+  private void updateDirectoryAfterSplit(int bucketIndex, int localDepth, long newBucketAddress) throws IOException {
     int dirSize = 1 << globalDepth;
+    int splitMask = 1 << localDepth;
 
     for (int i = 0; i < dirSize; i++) {
-      if ((i & ((1 << localDepth) - 1)) == bucketIndex) {
+      if ((i & (splitMask - 1)) == bucketIndex) {
         dirFile.seek(8 + i * 8);
-        if ((i & mask) == 0) {
-          dirFile.writeLong(getBucketAddress(bucketIndex));
+        if ((i & splitMask) == 0) {
+          // This points to the original bucket
+          long oldBucketAddress = dirFile.readLong();
+          dirFile.seek(dirFile.getFilePointer() - 8);
+          dirFile.writeLong(oldBucketAddress);
         } else {
+          // This points to the new bucket
           dirFile.writeLong(newBucketAddress);
         }
       }
     }
+  }
 
-    // Redistribute entries
+  private void redistributeEntries(int bucketIndex, int localDepth, int newId, long newPosition) throws IOException {
     long oldBucketAddress = getBucketAddress(bucketIndex);
+    long newBucketAddress = getBucketAddress(bucketIndex | (1 << localDepth));
+
+    // Read all entries from the old bucket
     bucketFile.seek(oldBucketAddress);
-    bucketFile.writeInt(localDepth + 1);
+    int oldLocalDepth = bucketFile.readInt();
     int oldEntries = bucketFile.readInt();
 
     List<Integer> ids = new ArrayList<>();
@@ -155,36 +175,49 @@ public class ExtendedHash implements IndexStrategy {
       positions.add(bucketFile.readLong());
     }
 
+    // Add the new entry
     ids.add(newId);
     positions.add(newPosition);
 
-    bucketFile.seek(oldBucketAddress + 8);
-    bucketFile.seek(newBucketAddress + 8);
+    // Clear the old bucket
+    bucketFile.seek(oldBucketAddress);
+    bucketFile.writeInt(oldLocalDepth + 1); // Increase local depth
+    bucketFile.writeInt(0); // Reset entry count
 
+    // Clear the new bucket
+    bucketFile.seek(newBucketAddress);
+    bucketFile.writeInt(oldLocalDepth + 1); // Set local depth
+    bucketFile.writeInt(0); // Reset entry count
+
+    // Redistribute entries
     int oldCount = 0, newCount = 0;
+    int mask = 1 << oldLocalDepth;
 
     for (int i = 0; i < ids.size(); i++) {
       int id = ids.get(i);
       long position = positions.get(i);
 
       if ((hash(id) & mask) == 0) {
-        bucketFile.seek(oldBucketAddress + 8 + oldCount * 12);
-        bucketFile.writeInt(id);
-        bucketFile.writeLong(position);
-        oldCount++;
+        writeToBucket(oldBucketAddress, oldCount++, id, position);
       } else {
-        bucketFile.seek(newBucketAddress + 8 + newCount * 12);
-        bucketFile.writeInt(id);
-        bucketFile.writeLong(position);
-        newCount++;
+        writeToBucket(newBucketAddress, newCount++, id, position);
       }
     }
 
-    bucketFile.seek(oldBucketAddress + 4);
-    bucketFile.writeInt(oldCount);
+    // Update entry counts
+    updateBucketCount(oldBucketAddress, oldCount);
+    updateBucketCount(newBucketAddress, newCount);
+  }
 
-    bucketFile.seek(newBucketAddress + 4);
-    bucketFile.writeInt(newCount);
+  private void writeToBucket(long bucketAddress, int index, int id, long position) throws IOException {
+    bucketFile.seek(bucketAddress + 8 + index * 12);
+    bucketFile.writeInt(id);
+    bucketFile.writeLong(position);
+  }
+
+  private void updateBucketCount(long bucketAddress, int count) throws IOException {
+    bucketFile.seek(bucketAddress + 4);
+    bucketFile.writeInt(count);
   }
 
   @Override

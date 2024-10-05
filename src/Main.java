@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
-import index.BStarTree;
+// import index.BStarTree;
 import index.ExtendedHash;
 import index.IndexStrategy;
 import view.Menu;
