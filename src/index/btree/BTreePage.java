@@ -1,4 +1,4 @@
-package index.bPlusTree;
+package index.btree;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -7,13 +7,12 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-class BPlusPage {
+class BTreePage {
   private int order;
   public int elements;
   public int[] keys;
-  public Long[] keysPos;
-  public Long[] childrens;
-  private long next;
+  public long[] keysPos;
+  public long[] childrens;
   private long position;
 
   // order
@@ -49,11 +48,11 @@ class BPlusPage {
   }
 
   // constructors
-  public BPlusPage(int order) {
+  public BTreePage(int order) {
     this.elements = 0;
     this.keys = new int[order - 1];
-    this.keysPos = new Long[order - 1];
-    this.childrens = new Long[order];
+    this.keysPos = new long[order - 1];
+    this.childrens = new long[order];
 
     Arrays.fill(keysPos, -1L);
     Arrays.fill(childrens, -1L);
@@ -61,9 +60,11 @@ class BPlusPage {
     setOrder(order);
   }
 
-  public BPlusPage(byte[] byteArray, int order, long position) throws IOException {
-    setOrder(order);
-    setPosition(position);
+  public BTreePage(byte[] byteArray, int order) throws IOException {
+    this.order = order;
+    this.keys = new int[order - 1];
+    this.keysPos = new long[order - 1];
+    this.childrens = new long[order];
 
     ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
     DataInputStream data = new DataInputStream(input);
@@ -77,8 +78,6 @@ class BPlusPage {
     }
 
     this.childrens[order - 1] = data.readLong();
-
-    this.next = data.readLong();
   }
 
   public byte[] toByteArray() throws IOException {
@@ -101,65 +100,10 @@ class BPlusPage {
       data.writeLong(childrens[i + 1]);
     }
 
-    data.writeLong(next);
-
     return output.toByteArray();
   }
 
-  public void insert(int key, long position) {
-    int index = elements - 1;
-
-    while (index >= 0 && keys[index] > key) {
-      keys[index + 1] = keys[index];
-      keysPos[index + 1] = keysPos[index];
-      childrens[index + 2] = childrens[index + 1];
-      index--;
-    }
-
-    keys[index + 1] = key;
-    keysPos[index + 1] = position;
-    elements++;
-  }
-
-  public void remove(int key) {
-
-  }
-
-  public BPlusPage split() {
-    BPlusPage newPage = new BPlusPage(order);
-
-    int middle = elements / 2;
-    newPage.elements = elements - middle - 1;
-
-    for (int i = 0; i < newPage.elements; i++) {
-      newPage.keys[i] = keys[middle + i + 1];
-      newPage.keysPos[i] = keysPos[middle + i + 1];
-      newPage.childrens[i + 1] = childrens[middle + i + 1];
-    }
-
-    newPage.childrens[0] = childrens[middle];
-    elements = middle;
-
-    return newPage;
-  }
-
-  public boolean isFull() {
-    return elements == (order - 1);
-  }
-
-  public boolean isLeaf() {
-    return childrens[0] == -1;
-  }
-
-  public int getKey(int index) {
-    return keys[index];
-  }
-
-  public long getChild(int index) {
-    return childrens[index];
-  }
-
   public static int pageFileLength(int order) {
-    return Integer.BYTES + (Long.BYTES + Integer.BYTES + Long.BYTES) * (order - 1) + Long.BYTES * 2;
+    return Integer.BYTES + (Long.BYTES + Integer.BYTES + Long.BYTES) * (order - 1) + Long.BYTES;
   }
 }
