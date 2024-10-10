@@ -8,15 +8,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class BPlusPage {
-	public int order; // Número máximo de filhos que uma página pode ter
-	public int maxElementos; // Variável igual a ordem - 1 para facilitar a clareza do código
-	public int maxFilhos; // Variável igual a ordem para facilitar a clareza do código
-	public int TAMANHO_ELEMENTO; // Os elementos são de tamanho fixo
-	public int TAMANHO_PAGINA; // A página será de tamanho fixo, calculado a partir da ordem
-
-	public ArrayList<BPlusRegister> elementos; // Elementos da página
-	public ArrayList<Long> filhos; // Vetor de ponteiros para os filhos
-	public long proxima; // Próxima folha, quando a página for uma folha
+	private int order;
+	public ArrayList<BPlusRegister> registers;
+	public ArrayList<Long> childrens;
+	private long next;
 
 	// order
   public int getOrder() {
@@ -32,91 +27,185 @@ public class BPlusPage {
     }
   }
 
+	// registers
+  public ArrayList<BPlusRegister> getRegisters() {
+    return this.registers;
+  }
+
+  public BPlusRegister getRegister(int index) {
+    return this.registers.get(index);
+  }
+
+	public int getMaxRegisters() {
+		return getMaxRegisters(this.order);
+	}
+
+	public static int getMaxRegisters(int order) {
+		return order - 1;
+	}
+
+	public int getRegistersSize() {
+		return this.registers.size();
+	}
+
+  public void setRegisters(ArrayList<BPlusRegister> registers) {
+    this.registers = registers;
+  }
+
+  private void setRegisters() {
+    this.registers = new ArrayList<>(this.order - 1);
+  }
+
+  public void addRegister(BPlusRegister register) {
+    this.registers.add(register);
+  }
+
+  public void addRegister(BPlusRegister register, int index) {
+    this.registers.add(index, register);
+  }
+
+  public BPlusRegister removeRegister(int index) {
+    return this.registers.remove(index);
+  }
+
+  public BPlusRegister removeLastRegister() {
+    return this.registers.remove(this.registers.size() - 1);
+  }
+
+	// childrens
+  public ArrayList<Long> getChildrens() {
+    return this.childrens;
+  }
+
+  public long getChild(int index) {
+		return this.childrens.get(index);
+  }
+
+	public int getMaxChildrens() {
+		return this.order;
+	}
+
+  public void setChildrens(ArrayList<Long> childrens) {
+    this.childrens = childrens;
+  }
+
+  private void setChildrens() {
+    this.childrens = new ArrayList<>(this.order);
+  }
+
+  public void addChild(long child) {
+    this.childrens.add(child);
+  }
+
+  public void addChild(long child, int index) {
+    this.childrens.add(index, child);
+  }
+
+  public long removeChild(int index) {
+    return this.childrens.remove(index);
+  }
+
+  public long removeLastChild() {
+    return this.childrens.remove(this.childrens.size() - 1);
+  }
+
+	// next
+  public long getNext() {
+    return this.next;
+  }
+
+	public boolean hasNext() {
+		return this.next != -1;
+	}
+
+  public void setNext(long next) {
+    this.next = next;
+  }
 
 	// constructors
 	public BPlusPage(int order) throws IOException {
 		this.setOrder(order);
+		this.setNext(-1);
 
-		this.maxFilhos = this.order;
-		this.maxElementos = this.order - 1;
-		this.elementos = new ArrayList<>(this.maxElementos);
-		this.filhos = new ArrayList<>(this.maxFilhos);
-		this.proxima = -1;
-
-		// Cálculo do tamanho (fixo) da página
-		// cada elemento -> depende do objeto
-		// cada ponteiro de filho -> 8 bytes
-		// último filho -> 8 bytes
-		// ponteiro próximo -> 8 bytes
-		this.TAMANHO_ELEMENTO = BPlusRegister.getSize();
-		this.TAMANHO_PAGINA = 4 + this.maxElementos * this.TAMANHO_ELEMENTO + this.maxFilhos * 8 + 8;
+		this.setRegisters();
+		this.setChildrens();
 	}
 
-	// Retorna o vetor de bytes que representa a página para armazenamento em
-	// arquivo
-	public byte[] toByteArray() throws IOException {
+	public BPlusPage(byte[] buffer, int order) throws IOException {
+		this.setOrder(order);
 
-		// Um fluxo de bytes é usado para construção do vetor de bytes
-		ByteArrayOutputStream ba = new ByteArrayOutputStream();
-		DataOutputStream out = new DataOutputStream(ba);
+    this.setRegisters();
+    this.setChildrens();
 
-		// Quantidade de elementos presentes na página
-		out.writeInt(this.elementos.size());
+		ByteArrayInputStream input = new ByteArrayInputStream(buffer);
+    DataInputStream data = new DataInputStream(input);
 
-		// Escreve todos os elementos
+		// Lê a quantidade de elementos presentes na página
+		int registers = data.readInt();
+
 		int i = 0;
-		while (i < this.elementos.size()) {
-			out.writeLong(this.filhos.get(i).longValue());
-			out.write(this.elementos.get(i).toByteArray());
+		while (i < registers) {
+			this.addChild(data.readLong());
+
+			byte[] registerBuffer = new byte[BPlusRegister.getSize()];
+			data.read(registerBuffer);
+			this.addRegister(new BPlusRegister(registerBuffer));
+
 			i++;
 		}
-		if (this.filhos.size() > 0)
-			out.writeLong(this.filhos.get(i).longValue());
-		else
-			out.writeLong(-1L);
+
+		this.addChild(data.readLong());
+		data.skipBytes((this.getMaxRegisters() - i) * (BPlusRegister.getSize() + Long.BYTES));
+
+		this.setNext(data.readLong());
+	}
+
+	public byte[] toByteArray() throws IOException {
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+    DataOutputStream data = new DataOutputStream(output);
+
+		int registers = this.getRegistersSize();
+
+		data.writeInt(registers);
+
+		int i = 0;
+		while (i < registers) {
+			data.writeLong(this.getChild(i));
+			data.write(this.getRegister(i).toByteArray());
+
+			i++;
+		}
+
+		if (this.childrens.size() > 0) {
+			data.writeLong(this.childrens.get(i).longValue());
+		} else {
+			data.writeLong(-1L);
+		}
 
 		// Completa o restante da página com registros vazios
-		byte[] registroVazio = new byte[TAMANHO_ELEMENTO];
-		while (i < this.maxElementos) {
-			out.write(registroVazio);
-			out.writeLong(-1L);
-			i++;
-		}
+    byte[] emptyRegister = new byte[BPlusRegister.getSize()];
+		while (i < this.getMaxRegisters()) {
+      data.write(emptyRegister);
+      data.writeLong(-1L);
 
-		// Escreve o ponteiro para a próxima página
-		out.writeLong(this.proxima);
+      i++;
+    }
 
-		// Retorna o vetor de bytes que representa a página
-		return ba.toByteArray();
+		data.writeLong(this.getNext());
+
+    return output.toByteArray();
 	}
 
-	// Reconstrói uma página a partir de um vetor de bytes lido no arquivo
-	public void fromByteArray(byte[] buffer) throws IOException {
+	public boolean isFull() {
+		return this.registers.size() >= this.getMaxRegisters();
+	}
 
-		// Usa um fluxo de bytes para leitura dos atributos
-		ByteArrayInputStream ba = new ByteArrayInputStream(buffer);
-		DataInputStream in = new DataInputStream(ba);
+	public boolean isLeaf() {
+		return this.getChild(0) == -1;
+	}
 
-		// Lê a quantidade de elementos da página
-		int n = in.readInt();
-
-		// Lê todos os elementos (reais ou vazios)
-		int i = 0;
-		this.elementos = new ArrayList<>(this.maxElementos);
-		this.filhos = new ArrayList<>(this.maxFilhos);
-		BPlusRegister elem;
-		while (i < n) {
-			this.filhos.add(in.readLong());
-
-			byte[] registro = new byte[TAMANHO_ELEMENTO];
-			in.read(registro);
-			elem = new BPlusRegister(registro);
-
-			this.elementos.add(elem);
-			i++;
-		}
-		this.filhos.add(in.readLong());
-		in.skipBytes((this.maxElementos - i) * (TAMANHO_ELEMENTO + 8));
-		this.proxima = in.readLong();
+	public static int getSize(int order) {
+		// numOfRegisters + (register.SIZE + child.SIZE)(order - 1) + lastChild + next
+    return Integer.BYTES + (Long.BYTES + BPlusRegister.getSize()) * (getMaxRegisters(order)) + 2 * Long.BYTES;
 	}
 }

@@ -13,16 +13,11 @@ public class BPlusTree implements IndexStrategy {
 	private String filePath;
 	private RandomAccessFile file;
 
-
-	private int maxElementos; // Variável igual a ordem - 1 para facilitar a clareza do código
-	private int maxFilhos; // Variável igual a ordem para facilitar a clareza do código
-
-	// Variáveis usadas nas funções recursivas (já que não é possível passar valores
-	// por referência)
-	private BPlusRegister elemAux;
-	private long paginaAux;
-	private boolean cresceu;
-	private boolean diminuiu;
+	// Variáveis globais para controle de crescimento da árvore
+	private BPlusRegister auxRegister;
+	private long auxPagePosition;
+	private boolean pageGrew;
+	private boolean pageShrunk;
 
 	// order
   public int getOrder() {
@@ -67,6 +62,16 @@ public class BPlusTree implements IndexStrategy {
     this.setFile(new RandomAccessFile(this.filePath, "rw"));
   }
 
+	// root
+	public long getRoot() throws IOException {
+		this.file.seek(0);
+		return this.file.readLong();
+	}
+
+	public void setRoot(long position) throws IOException {
+		this.file.seek(0);
+		this.file.writeLong(position);
+	}
 
 	// constructor
 	public BPlusTree(int order, String filePath) throws Exception {
@@ -74,24 +79,19 @@ public class BPlusTree implements IndexStrategy {
 		this.setFilePath(filePath);
 
 		this.setFile();
-
-		maxElementos = this.getOrder() - 1;	// TODO: remove
-		maxFilhos = this.getOrder();				// TODO: remove
-	}
-
-	// Testa se a árvore está empty. Uma árvore empty é identificada pela raiz == -1
-	public boolean empty() throws IOException {
-		long raiz;
-		this.file.seek(0);
-		raiz = this.file.readLong();
-		return raiz == -1;
 	}
 
 	@Override
 	public long get(int id) throws IOException {
 		BPlusRegister register = new BPlusRegister(id, 0);
-		ArrayList<BPlusRegister> registers = read(register);
+		long root = this.getRoot();
 
+		// early return
+		if (root == -1) {
+			return -1;
+		}
+
+		ArrayList<BPlusRegister> registers = read(register, root);
 		if (registers.isEmpty()) {
 			return -1;
 		}
@@ -99,115 +99,87 @@ public class BPlusTree implements IndexStrategy {
 		return registers.get(0).getPosition();
 	}
 
-	// Busca recursiva por um elemento a partir da chave. Este metodo invoca
-	// o método recursivo read1, passando a raiz como referência.
-	// O método retorna a lista de elementos que possuem a chave (considerando
-	// a possibilidade chaves repetidas)
-	public ArrayList<BPlusRegister> read(BPlusRegister elem) throws IOException {
-
-		// Recupera a raiz da árvore
-		long raiz;
-		this.file.seek(0);
-		raiz = this.file.readLong();
-
-		// Executa a busca recursiva
-		if (raiz != -1)
-			return read(elem, raiz);
-		else {
-			ArrayList<BPlusRegister> resposta = new ArrayList<>();
-			return resposta;
-		}
-	}
-
-	// Busca recursiva. Este método recebe a referência de uma página e busca
-	// pela chave na mesma. A busca continua pelos filhos, se houverem.
-	private ArrayList<BPlusRegister> read(BPlusRegister elem, long pagina) throws IOException {
-
-		// Como a busca é recursiva, a descida para um filho inexistente
-		// (filho de uma página folha) retorna um vetor vazio.
-		if (pagina == -1) {
-			ArrayList<BPlusRegister> resposta = new ArrayList<>();
-			return resposta;
+	private ArrayList<BPlusRegister> read(BPlusRegister elem, long position) throws IOException {
+		// early return
+		if (position == -1) {
+			return new ArrayList<>();
 		}
 
-		// Reconstrói a página passada como referência a partir
-		// do registro lido no this.file
-		this.file.seek(pagina);
-		BPlusPage pa = new BPlusPage(this.order);
-		byte[] buffer = new byte[pa.TAMANHO_PAGINA];
-		this.file.read(buffer);
-		pa.fromByteArray(buffer);
+		BPlusPage page = readPage(position);
 
 		// Encontra o ponto em que a chave deve estar na página
 		// Nesse primeiro passo, todas as chaves menores que a chave buscada
 		// são ultrapassadas
 		int i = 0;
-		while (elem != null && i < pa.elementos.size() && elem.compareTo(pa.elementos.get(i)) > 0) {
+		while (elem != null && i < page.getRegistersSize() && elem.compareTo(page.registers.get(i)) > 0) {
 			i++;
 		}
 
 		// Chave encontrada (ou pelo menos o ponto onde ela deveria estar).
 		// Segundo passo - testa se a chave é a chave buscada e se está em uma folha
 		// Obs.: em uma árvore B+, todas as chaves válidas estão nas folhas
-		if (i < pa.elementos.size() && pa.filhos.get(0) == -1
-				&& (elem == null || elem.compareTo(pa.elementos.get(i)) == 0)) {
+		if (i < page.getRegistersSize() && page.isLeaf() && (elem == null || elem.compareTo(page.registers.get(i)) == 0)) {
 
 			// Cria a lista de retorno e insere os elementos encontrados
 			ArrayList<BPlusRegister> lista = new ArrayList<>();
-			while (elem == null || elem.compareTo(pa.elementos.get(i)) <= 0) {
+			while (elem == null || elem.compareTo(page.registers.get(i)) <= 0) {
 
-				if (elem == null || elem.compareTo(pa.elementos.get(i)) == 0)
-					lista.add(pa.elementos.get(i));
+				if (elem == null || elem.compareTo(page.registers.get(i)) == 0) {
+					lista.add(page.registers.get(i));
+				}
+
 				i++;
 
 				// Se chegar ao fim da folha, então avança para a folha seguinte
-				if (i == pa.elementos.size()) {
-					if (pa.proxima == -1)
+				if (i == page.getRegistersSize()) {
+					if (page.getNext() == -1) {
 						break;
-					this.file.seek(pa.proxima);
-					this.file.read(buffer);
-					pa.fromByteArray(buffer);
+					}
+
+					page = readPage(page.getNext());
+
 					i = 0;
 				}
 			}
+
 			return lista;
 		}
 
 		// Terceiro passo - se a chave não tiver sido encontrada nesta folha,
 		// testa se ela está na próxima folha. Isso pode ocorrer devido ao
 		// processo de ordenação.
-		else if (i == pa.elementos.size() && pa.filhos.get(0) == -1) {
+		else if (i == page.getRegistersSize() && page.isLeaf()) {
 
 			// Testa se há uma próxima folha. Nesse caso, retorna um vetor vazio
-			if (pa.proxima == -1) {
-				ArrayList<BPlusRegister> resposta = new ArrayList<>();
-				return resposta;
+			if (!page.hasNext()) {
+				return new ArrayList<>();
 			}
 
 			// Lê a próxima folha
-			this.file.seek(pa.proxima);
-			this.file.read(buffer);
-			pa.fromByteArray(buffer);
+			page = readPage(page.getNext());
 
 			// Testa se a chave é a primeira da próxima folha
 			i = 0;
-			if (elem.compareTo(pa.elementos.get(i)) <= 0) {
+			if (elem.compareTo(page.registers.get(i)) <= 0) {
 
 				// Cria a lista de retorno
 				ArrayList<BPlusRegister> lista = new ArrayList<>();
 
 				// Testa se a chave foi encontrada, e adiciona todas as chaves
 				// secundárias
-				while (elem.compareTo(pa.elementos.get(i)) <= 0) {
-					if (elem.compareTo(pa.elementos.get(i)) == 0)
-						lista.add(pa.elementos.get(i));
+				while (elem.compareTo(page.registers.get(i)) <= 0) {
+					if (elem.compareTo(page.registers.get(i)) == 0) {
+						lista.add(page.registers.get(i));
+					}
+
 					i++;
-					if (i == pa.elementos.size()) {
-						if (pa.proxima == -1)
+					if (i == page.getRegistersSize()) {
+						if (page.getNext() == -1) {
 							break;
-						this.file.seek(pa.proxima);
-						this.file.read(buffer);
-						pa.fromByteArray(buffer);
+						}
+
+						page = readPage(page.getNext());
+
 						i = 0;
 					}
 				}
@@ -217,60 +189,40 @@ public class BPlusTree implements IndexStrategy {
 
 			// Se não houver uma próxima página, retorna um vetor vazio
 			else {
-				ArrayList<BPlusRegister> resposta = new ArrayList<>();
-				return resposta;
+				return new ArrayList<>();
 			}
 		}
 
 		// Chave ainda não foi encontrada, continua a busca recursiva pela árvore
-		if (elem == null || i == pa.elementos.size() || elem.compareTo(pa.elementos.get(i)) <= 0)
-			return read(elem, pa.filhos.get(i));
-		else
-			return read(elem, pa.filhos.get(i + 1));
+		if (elem == null || i == page.getRegistersSize() || elem.compareTo(page.registers.get(i)) <= 0) {
+			return read(elem, page.childrens.get(i));
+		} else {
+			return read(elem, page.childrens.get(i + 1));
+		}
 	}
 
 	@Override
 	public void add(int id, long position) throws IOException {
 		BPlusRegister register = new BPlusRegister(id, position);
-		create(register);
-	}
 
-	// Inclusão de novos elementos na árvore. A inclusão é recursiva. A primeira
-	// função chama a segunda recursivamente, passando a raiz como referência.
-	// Eventualmente, a árvore pode crescer para cima.
-	public boolean create(BPlusRegister elem) throws IOException {
+		long pagina = this.getRoot();
 
-		// Carrega a raiz
-		this.file.seek(0);
-		long pagina;
-		pagina = this.file.readLong();
-
-		// O processo de inclusão permite que os valores passados como referência
-		// sejam substituídos por outros valores, para permitir a divisão de páginas
-		// e crescimento da árvore. Assim, são usados os valores globais elemAux
-		// e chave2Aux. Quando há uma divisão, as chaves promovidas são armazenadas
-		// nessas variáveis.
-		elemAux = elem.clone();
-
-		// Se houver crescimento, então será criada uma página extra e será mantido um
-		// ponteiro para essa página. Os valores também são globais.
-		paginaAux = -1;
-		cresceu = false;
+		this.auxRegister = register.clone();
+		this.auxPagePosition = -1;
+		this.pageGrew = false;
 
 		// Chamada recursiva para a inserção do par de chaves
-		boolean inserido = create(pagina);
+		create(pagina);
 
 		// Testa a necessidade de criação de uma nova raiz.
-		if (cresceu) {
+		if (this.pageGrew) {
 
 			// Cria a nova página que será a raiz. O ponteiro esquerdo da raiz
 			// será a raiz antiga e o seu ponteiro direito será para a nova página.
 			BPlusPage novaBPlusPage = new BPlusPage(this.order);
-			novaBPlusPage.elementos = new ArrayList<>(this.maxElementos);
-			novaBPlusPage.elementos.add(elemAux);
-			novaBPlusPage.filhos = new ArrayList<>(this.maxFilhos);
-			novaBPlusPage.filhos.add(pagina);
-			novaBPlusPage.filhos.add(paginaAux);
+			novaBPlusPage.addRegister(this.auxRegister);
+			novaBPlusPage.addChild(pagina);
+			novaBPlusPage.addChild(auxPagePosition);
 
 			// Acha o espaço em disco. Testa se há páginas excluídas.
 			this.file.seek(8);
@@ -278,23 +230,18 @@ public class BPlusTree implements IndexStrategy {
 			if (end == -1) {
 				end = this.file.length();
 			} else { // reusa um endereço e atualiza a lista de excluídos no cabeçalho
-				this.file.seek(end);
-				BPlusPage pa_excluida = new BPlusPage(this.order);
-				byte[] buffer = new byte[pa_excluida.TAMANHO_PAGINA];
-				this.file.read(buffer);
-				pa_excluida.fromByteArray(buffer);
+				BPlusPage pa_excluida = readPage(end);
+
 				this.file.seek(8);
-				this.file.writeLong(pa_excluida.proxima);
+				this.file.writeLong(pa_excluida.getNext());
 			}
+
 			this.file.seek(end);
 			long raiz = this.file.getFilePointer();
 			this.file.write(novaBPlusPage.toByteArray());
 			this.file.seek(0);
 			this.file.writeLong(raiz);
-			inserido = true;
 		}
-
-		return inserido;
 	}
 
 	// Função recursiva de inclusão. A função passa uma página de referência.
@@ -304,66 +251,56 @@ public class BPlusTree implements IndexStrategy {
 		// Testa se passou para o filho de uma página folha. Nesse caso,
 		// inicializa as variáveis globais de controle.
 		if (pagina == -1) {
-			cresceu = true;
-			paginaAux = -1;
+			this.pageGrew = true;
+			auxPagePosition = -1;
 			return false;
 		}
 
 		// Lê a página passada como referência
-		this.file.seek(pagina);
-		BPlusPage pa = new BPlusPage(this.order);
-		byte[] buffer = new byte[pa.TAMANHO_PAGINA];
-		this.file.read(buffer);
-		pa.fromByteArray(buffer);
+		BPlusPage pa = readPage(pagina);
 
 		// Busca o próximo ponteiro de descida. Como pode haver repetição
 		// da primeira chave, a segunda também é usada como referência.
 		// Nesse primeiro passo, todos os pares menores são ultrapassados.
 		int i = 0;
-		while (i < pa.elementos.size() && (elemAux.compareTo(pa.elementos.get(i)) > 0)) {
+		while (i < pa.getRegistersSize() && (this.auxRegister.compareTo(pa.registers.get(i)) > 0)) {
 			i++;
 		}
 
 		// Testa se o registro já existe em uma folha. Se isso acontecer, então
 		// a inclusão é cancelada.
-		if (i < pa.elementos.size() && pa.filhos.get(0) == -1 && elemAux.compareTo(pa.elementos.get(i)) == 0) {
-			cresceu = false;
+		if (i < pa.getRegistersSize() && pa.isLeaf() && this.auxRegister.compareTo(pa.registers.get(i)) == 0) {
+			this.pageGrew = false;
 			return false;
 		}
 
 		// Continua a busca recursiva por uma nova página. A busca continuará até o
 		// filho inexistente de uma página folha ser alcançado.
 		boolean inserido;
-		if (i == pa.elementos.size() || elemAux.compareTo(pa.elementos.get(i)) < 0)
-			inserido = create(pa.filhos.get(i));
-		else
-			inserido = create(pa.filhos.get(i + 1));
+		if (i == pa.getRegistersSize() || this.auxRegister.compareTo(pa.registers.get(i)) < 0) {
+			inserido = create(pa.childrens.get(i));
+		} else {
+			inserido = create(pa.childrens.get(i + 1));
+		}
 
-		// A partir deste ponto, as chamadas recursivas já foram encerradas.
-		// Assim, o próximo código só é executado ao retornar das chamadas recursivas.
-
-		// A inclusão já foi resolvida por meio de uma das chamadas recursivas. Nesse
-		// caso, apenas retorna para encerrar a recursão.
-		// A inclusão pode ter sido resolvida porque o par de chaves já existia
-		// (inclusão inválida)
-		// ou porque o novo elemento coube em uma página existente.
-		if (!cresceu)
+		if (!this.pageGrew) {
 			return inserido;
+		}
 
 		// Se tiver espaço na página, faz a inclusão nela mesmo
-		if (pa.elementos.size() < maxElementos) {
+		if (!pa.isFull()) {
 
 			// Puxa todos elementos para a direita, começando do último
 			// para gerar o espaço para o novo elemento e insere o novo elemento
-			pa.elementos.add(i, elemAux);
-			pa.filhos.add(i + 1, paginaAux);
+			pa.registers.add(i, this.auxRegister);
+			pa.childrens.add(i + 1, auxPagePosition);
 
 			// Escreve a página atualizada no this.file
 			this.file.seek(pagina);
 			this.file.write(pa.toByteArray());
 
 			// Encerra o processo de crescimento e retorna
-			cresceu = false;
+			this.pageGrew = false;
 			return true;
 		}
 
@@ -375,50 +312,51 @@ public class BPlusTree implements IndexStrategy {
 
 		// Move a metade superior dos elementos para a nova página,
 		// considerando que maxElementos pode ser ímpar
-		int meio = maxElementos / 2;
-		np.filhos.add(pa.filhos.get(meio)); // COPIA o primeiro ponteiro
-		for (int j = 0; j < (maxElementos - meio); j++) {
-			np.elementos.add(pa.elementos.remove(meio)); // MOVE os elementos
-			np.filhos.add(pa.filhos.remove(meio + 1)); // MOVE os demais ponteiros
+		int meio = BPlusPage.getMaxRegisters(this.order) / 2;
+		np.childrens.add(pa.childrens.get(meio)); // COPIA o primeiro ponteiro
+		for (int j = 0; j < (BPlusPage.getMaxRegisters(this.order) - meio); j++) {
+			np.registers.add(pa.registers.remove(meio)); // MOVE os elementos
+			np.childrens.add(pa.childrens.remove(meio + 1)); // MOVE os demais ponteiros
 		}
 
 		// Testa o lado de inserção
 		// Caso 1 - Novo registro deve ficar na página da esquerda
 		if (i <= meio) {
-			pa.elementos.add(i, elemAux);
-			pa.filhos.add(i + 1, paginaAux);
+			pa.registers.add(i, this.auxRegister);
+			pa.childrens.add(i + 1, auxPagePosition);
 
 			// Se a página for folha, seleciona o primeiro elemento da página
 			// da direita para ser promovido, mantendo-o na folha
-			if (pa.filhos.get(0) == -1)
-				elemAux = np.elementos.get(0).clone();
+			if (pa.isLeaf()) {
+				this.auxRegister = np.registers.get(0).clone();
+			}
 
 			// caso contrário, promove o maior elemento da página esquerda
 			// removendo-o da página
 			else {
-				elemAux = pa.elementos.remove(pa.elementos.size() - 1);
-				pa.filhos.remove(pa.filhos.size() - 1);
+				this.auxRegister = pa.registers.remove(pa.getRegistersSize() - 1);
+				pa.childrens.remove(pa.childrens.size() - 1);
 			}
 		}
 
 		// Caso 2 - Novo registro deve ficar na página da direita
 		else {
 
-			int j = maxElementos - meio;
-			while (elemAux.compareTo(np.elementos.get(j - 1)) < 0)
+			int j = BPlusPage.getMaxRegisters(this.order) - meio;
+			while (this.auxRegister.compareTo(np.registers.get(j - 1)) < 0) {
 				j--;
-			np.elementos.add(j, elemAux);
-			np.filhos.add(j + 1, paginaAux);
+			}
+			np.registers.add(j, this.auxRegister);
+			np.childrens.add(j + 1, auxPagePosition);
 
 			// Seleciona o primeiro elemento da página da direita para ser promovido
-			elemAux = np.elementos.get(0).clone();
+			this.auxRegister = np.registers.get(0).clone();
 
 			// Se não for folha, remove o elemento promovido da página
-			if (pa.filhos.get(0) != -1) {
-				np.elementos.remove(0);
-				np.filhos.remove(0);
+			if (!pa.isLeaf()) {
+				np.registers.remove(0);
+				np.childrens.remove(0);
 			}
-
 		}
 
 		// Obtém um endereço para a nova página (página excluída ou fim do this.file)
@@ -427,25 +365,22 @@ public class BPlusTree implements IndexStrategy {
 		if (end == -1) {
 			end = this.file.length();
 		} else { // reusa um endereço e atualiza a lista de excluídos no cabeçalho
-			this.file.seek(end);
-			BPlusPage pa_excluida = new BPlusPage(this.order);
-			buffer = new byte[pa_excluida.TAMANHO_PAGINA];
-			this.file.read(buffer);
-			pa_excluida.fromByteArray(buffer);
+			BPlusPage pa_excluida = readPage(end);
+
 			this.file.seek(8);
-			this.file.writeLong(pa_excluida.proxima);
+			this.file.writeLong(pa_excluida.getNext());
 		}
 
 		// Se a página era uma folha e apontava para outra folha,
 		// então atualiza os ponteiros dessa página e da página nova
-		if (pa.filhos.get(0) == -1) {
-			np.proxima = pa.proxima;
-			pa.proxima = end;
+		if (pa.isLeaf()) {
+			np.setNext(pa.getNext());
+			pa.setNext(end);
 		}
 
 		// Grava as páginas no this.file
-		paginaAux = end;
-		this.file.seek(paginaAux);
+		auxPagePosition = end;
+		this.file.seek(auxPagePosition);
 		this.file.write(np.toByteArray());
 
 		this.file.seek(pagina);
@@ -472,33 +407,29 @@ public class BPlusTree implements IndexStrategy {
 		pagina = this.file.readLong();
 
 		// variável global de controle da redução do tamanho da árvore
-		diminuiu = false;
+		this.pageShrunk = false;
 
-		// Chama recursivamente a exclusão de registro (na elemAux e no
+		// Chama recursivamente a exclusão de registro (na auxRegister e no
 		// chave2Aux) passando uma página como referência
 		boolean excluido = delete(elem, pagina);
 
 		// Se a exclusão tiver sido possível e a página tiver reduzido seu tamanho,
 		// por meio da fusão das duas páginas filhas da raiz, elimina essa raiz
-		if (excluido && diminuiu) {
+		if (excluido && this.pageShrunk) {
 
 			// Lê a raiz
-			this.file.seek(pagina);
-			BPlusPage pa = new BPlusPage(this.order);
-			byte[] buffer = new byte[pa.TAMANHO_PAGINA];
-			this.file.read(buffer);
-			pa.fromByteArray(buffer);
+			BPlusPage pa = readPage(pagina);
 
 			// Se a página tiver 0 elementos, apenas atualiza o ponteiro para a raiz,
 			// no cabeçalho do this.file, para o seu primeiro filho e insere a raiz velha
 			// na lista de páginas excluídas
-			if (pa.elementos.size() == 0) {
+			if (pa.getRegistersSize() == 0) {
 				this.file.seek(0);
-				this.file.writeLong(pa.filhos.get(0));
+				this.file.writeLong(pa.childrens.get(0));
 
 				this.file.seek(8);
 				long end = this.file.readLong(); // cabeça da lista de páginas excluídas
-				pa.proxima = end;
+				pa.setNext(end);
 				this.file.seek(8);
 				this.file.writeLong(pagina);
 				this.file.seek(pagina);
@@ -520,31 +451,27 @@ public class BPlusTree implements IndexStrategy {
 		// Testa se o registro não foi encontrado na árvore, ao alcançar uma folha
 		// inexistente (filho de uma folha real)
 		if (pagina == -1) {
-			diminuiu = false;
+			this.pageShrunk = false;
 			return false;
 		}
 
 		// Lê o registro da página no this.file
-		this.file.seek(pagina);
-		BPlusPage pa = new BPlusPage(this.order);
-		byte[] buffer = new byte[pa.TAMANHO_PAGINA];
-		this.file.read(buffer);
-		pa.fromByteArray(buffer);
+		BPlusPage pa = readPage(pagina);
 
 		// Encontra a página em que o par de chaves está presente
 		// Nesse primeiro passo, salta todas os pares de chaves menores
 		int i = 0;
-		while (i < pa.elementos.size() && elem.compareTo(pa.elementos.get(i)) > 0) {
+		while (i < pa.getRegistersSize() && elem.compareTo(pa.registers.get(i)) > 0) {
 			i++;
 		}
 
 		// Chaves encontradas em uma folha
-		if (i < pa.elementos.size() && pa.filhos.get(0) == -1 && elem.compareTo(pa.elementos.get(i)) == 0) {
+		if (i < pa.getRegistersSize() && pa.isLeaf() && elem.compareTo(pa.registers.get(i)) == 0) {
 
 			// Puxa todas os elementos seguintes para uma posição anterior, sobrescrevendo
 			// o elemento a ser excluído
-			pa.elementos.remove(i);
-			pa.filhos.remove(i + 1);
+			pa.registers.remove(i);
+			pa.childrens.remove(i + 1);
 
 			// Atualiza o registro da página no this.file
 			this.file.seek(pagina);
@@ -552,7 +479,7 @@ public class BPlusTree implements IndexStrategy {
 
 			// Se a página contiver menos elementos do que o mínimo necessário,
 			// indica a necessidade de fusão de páginas
-			diminuiu = pa.elementos.size() < maxElementos / 2;
+			this.pageShrunk = pa.getRegistersSize() < BPlusPage.getMaxRegisters(this.order) / 2;
 			return true;
 		}
 
@@ -562,11 +489,11 @@ public class BPlusTree implements IndexStrategy {
 		// A variável diminuído mantem um registro de qual página eventualmente
 		// pode ter ficado com menos elementos do que o mínimo necessário.
 		// Essa página será filha da página atual
-		if (i == pa.elementos.size() || elem.compareTo(pa.elementos.get(i)) < 0) {
-			excluido = delete(elem, pa.filhos.get(i));
+		if (i == pa.getRegistersSize() || elem.compareTo(pa.registers.get(i)) < 0) {
+			excluido = delete(elem, pa.childrens.get(i));
 			diminuido = i;
 		} else {
-			excluido = delete(elem, pa.filhos.get(i + 1));
+			excluido = delete(elem, pa.childrens.get(i + 1));
 			diminuido = i + 1;
 		}
 
@@ -574,15 +501,13 @@ public class BPlusTree implements IndexStrategy {
 		// recursivas do método
 
 		// Testa se há necessidade de fusão de páginas
-		if (diminuiu) {
+		if (this.pageShrunk) {
 
 			// Carrega a página filho que ficou com menos elementos do
 			// do que o mínimo necessário
-			long paginaFilho = pa.filhos.get(diminuido);
-			BPlusPage pFilho = new BPlusPage(this.order);
-			this.file.seek(paginaFilho);
-			this.file.read(buffer);
-			pFilho.fromByteArray(buffer);
+			long paginaFilho = pa.childrens.get(diminuido);
+
+			BPlusPage pFilho = readPage(paginaFilho);
 
 			// Cria uma página para o irmão (da direita ou esquerda)
 			long paginaIrmaoEsq = -1, paginaIrmaoDir = -1;
@@ -590,61 +515,59 @@ public class BPlusTree implements IndexStrategy {
 
 			// Carrega os irmãos (que existirem)
 			if (diminuido > 0) { // possui um irmão esquerdo, pois não é a primeira filho do pai
-				paginaIrmaoEsq = pa.filhos.get(diminuido - 1);
-				pIrmaoEsq = new BPlusPage(this.order);
-				this.file.seek(paginaIrmaoEsq);
-				this.file.read(buffer);
-				pIrmaoEsq.fromByteArray(buffer);
+				paginaIrmaoEsq = pa.childrens.get(diminuido - 1);
+
+				pIrmaoEsq = readPage(paginaIrmaoEsq);
 			}
-			if (diminuido < pa.elementos.size()) { // possui um irmão direito, pois não é o último filho do pai
-				paginaIrmaoDir = pa.filhos.get(diminuido + 1);
-				pIrmaoDir = new BPlusPage(this.order);
-				this.file.seek(paginaIrmaoDir);
-				this.file.read(buffer);
-				pIrmaoDir.fromByteArray(buffer);
+
+			if (diminuido < pa.getRegistersSize()) { // possui um irmão direito, pois não é o último filho do pai
+				paginaIrmaoDir = pa.childrens.get(diminuido + 1);
+				
+				pIrmaoDir = readPage(paginaIrmaoDir);
 			}
 
 			// Verifica se o irmão esquerdo existe e pode ceder algum elemento
-			if (pIrmaoEsq != null && pIrmaoEsq.elementos.size() > maxElementos / 2) {
+			if (pIrmaoEsq != null && pIrmaoEsq.getRegistersSize() > BPlusPage.getMaxRegisters(this.order) / 2) {
 
 				// Se for folha, copia o elemento do irmão, já que o do pai será extinto ou
 				// repetido
-				if (pFilho.filhos.get(0) == -1)
-					pFilho.elementos.add(0, pIrmaoEsq.elementos.remove(pIrmaoEsq.elementos.size() - 1));
+				if (pFilho.isLeaf()) {
+					pFilho.registers.add(0, pIrmaoEsq.registers.remove(pIrmaoEsq.getRegistersSize() - 1));
+				}
 
 				// Se não for folha, desce o elemento do pai
-				else
-					pFilho.elementos.add(0, pa.elementos.get(diminuido - 1));
+				else {
+					pFilho.registers.add(0, pa.registers.get(diminuido - 1));
+				}
 
 				// Copia o elemento vindo do irmão para o pai (página atual)
-				pa.elementos.set(diminuido - 1, pFilho.elementos.get(0));
+				pa.registers.set(diminuido - 1, pFilho.registers.get(0));
 
 				// Reduz o elemento no irmão
-				pFilho.filhos.add(0, pIrmaoEsq.filhos.remove(pIrmaoEsq.filhos.size() - 1));
-
+				pFilho.childrens.add(0, pIrmaoEsq.childrens.remove(pIrmaoEsq.childrens.size() - 1));
 			}
 
 			// Senão, verifica se o irmão direito existe e pode ceder algum elemento
-			else if (pIrmaoDir != null && pIrmaoDir.elementos.size() > maxElementos / 2) {
+			else if (pIrmaoDir != null && pIrmaoDir.getRegistersSize() > BPlusPage.getMaxRegisters(this.order) / 2) {
 				// Se for folha
-				if (pFilho.filhos.get(0) == -1) {
+				if (pFilho.isLeaf()) {
 
 					// move o elemento do irmão
-					pFilho.elementos.add(pIrmaoDir.elementos.remove(0));
-					pFilho.filhos.add(pIrmaoDir.filhos.remove(0));
+					pFilho.registers.add(pIrmaoDir.registers.remove(0));
+					pFilho.childrens.add(pIrmaoDir.childrens.remove(0));
 
 					// sobe o próximo elemento do irmão
-					pa.elementos.set(diminuido, pIrmaoDir.elementos.get(0));
+					pa.registers.set(diminuido, pIrmaoDir.registers.get(0));
 				}
 
 				// Se não for folha, rotaciona os elementos
 				else {
 					// Copia o elemento do pai, com o ponteiro esquerdo do irmão
-					pFilho.elementos.add(pa.elementos.get(diminuido));
-					pFilho.filhos.add(pIrmaoDir.filhos.remove(0));
+					pFilho.registers.add(pa.registers.get(diminuido));
+					pFilho.childrens.add(pIrmaoDir.childrens.remove(0));
 
 					// Sobe o elemento esquerdo do irmão para o pai
-					pa.elementos.set(diminuido, pIrmaoDir.elementos.remove(0));
+					pa.registers.set(diminuido, pIrmaoDir.registers.remove(0));
 				}
 			}
 
@@ -652,69 +575,68 @@ public class BPlusTree implements IndexStrategy {
 			else if (pIrmaoEsq != null) {
 				// Se a página reduzida não for folha, então o elemento
 				// do pai deve descer para o irmão
-				if (pFilho.filhos.get(0) != -1) {
-					pIrmaoEsq.elementos.add(pa.elementos.remove(diminuido - 1));
-					pIrmaoEsq.filhos.add(pFilho.filhos.remove(0));
+				if (!pFilho.isLeaf()) {
+					pIrmaoEsq.registers.add(pa.registers.remove(diminuido - 1));
+					pIrmaoEsq.childrens.add(pFilho.childrens.remove(0));
 				}
 				// Senão, apenas remove o elemento do pai
 				else {
-					pa.elementos.remove(diminuido - 1);
-					pFilho.filhos.remove(0);
+					pa.registers.remove(diminuido - 1);
+					pFilho.childrens.remove(0);
 				}
-				pa.filhos.remove(diminuido); // remove o ponteiro para a própria página
+				pa.childrens.remove(diminuido); // remove o ponteiro para a própria página
 
 				// Copia todos os registros para o irmão da esquerda
-				pIrmaoEsq.elementos.addAll(pFilho.elementos);
-				pIrmaoEsq.filhos.addAll(pFilho.filhos);
-				pFilho.elementos.clear();
-				pFilho.filhos.clear();
+				pIrmaoEsq.registers.addAll(pFilho.registers);
+				pIrmaoEsq.childrens.addAll(pFilho.childrens);
+				pFilho.registers.clear();
+				pFilho.childrens.clear();
 
 				// Se as páginas forem folhas, copia o ponteiro para a folha seguinte
-				if (pIrmaoEsq.filhos.get(0) == -1)
-					pIrmaoEsq.proxima = pFilho.proxima;
+				if (pIrmaoEsq.isLeaf()) {
+					pIrmaoEsq.setNext(pFilho.getNext());
+				}
 
 				// Insere o filho na lista de páginas excluídas
 				this.file.seek(8);
-				pFilho.proxima = this.file.readLong();
+				pFilho.setNext(this.file.readLong());
 				this.file.seek(8);
 				this.file.writeLong(paginaFilho);
-
 			}
 
 			// Senão, faz a fusão com o irmão direito, assumindo que ele existe
 			else {
 				// Se a página reduzida não for folha, então o elemento
 				// do pai deve descer para o irmão
-				if (pFilho.filhos.get(0) != -1) {
-					pFilho.elementos.add(pa.elementos.remove(diminuido));
-					pFilho.filhos.add(pIrmaoDir.filhos.remove(0));
+				if (!pFilho.isLeaf()) {
+					pFilho.registers.add(pa.registers.remove(diminuido));
+					pFilho.childrens.add(pIrmaoDir.childrens.remove(0));
 				}
 				// Senão, apenas remove o elemento do pai
 				else {
-					pa.elementos.remove(diminuido);
-					pFilho.filhos.remove(0);
+					pa.registers.remove(diminuido);
+					pFilho.childrens.remove(0);
 				}
-				pa.filhos.remove(diminuido + 1); // remove o ponteiro para o irmão direito
+				pa.childrens.remove(diminuido + 1); // remove o ponteiro para o irmão direito
 
 				// Move todos os registros do irmão da direita
-				pFilho.elementos.addAll(pIrmaoDir.elementos);
-				pFilho.filhos.addAll(pIrmaoDir.filhos);
-				pIrmaoDir.elementos.clear();
-				pIrmaoDir.filhos.clear();
+				pFilho.registers.addAll(pIrmaoDir.registers);
+				pFilho.childrens.addAll(pIrmaoDir.childrens);
+				pIrmaoDir.registers.clear();
+				pIrmaoDir.childrens.clear();
 
 				// Se a página for folha, copia o ponteiro para a próxima página
-				pFilho.proxima = pIrmaoDir.proxima;
+				pFilho.setNext(pIrmaoDir.getNext());
 
 				// Insere o irmão da direita na lista de páginas excluídas
 				this.file.seek(8);
-				pIrmaoDir.proxima = this.file.readLong();
+				pIrmaoDir.setNext(this.file.readLong());
 				this.file.seek(8);
 				this.file.writeLong(paginaIrmaoDir);
-
 			}
 
 			// testa se o pai também ficou sem o número mínimo de elementos
-			diminuiu = pa.elementos.size() < maxElementos / 2;
+			this.pageShrunk = pa.getRegistersSize() < BPlusPage.getMaxRegisters(this.order) / 2;
 
 			// Atualiza os demais registros
 			this.file.seek(pagina);
@@ -725,11 +647,13 @@ public class BPlusTree implements IndexStrategy {
 				this.file.seek(paginaIrmaoEsq);
 				this.file.write(pIrmaoEsq.toByteArray());
 			}
+
 			if (pIrmaoDir != null) {
 				this.file.seek(paginaIrmaoDir);
 				this.file.write(pIrmaoDir.toByteArray());
 			}
 		}
+
 		return excluido;
 	}
 
@@ -743,5 +667,13 @@ public class BPlusTree implements IndexStrategy {
 	public void clear() throws IOException {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("Unimplemented method 'clear'");
+	}
+
+	private BPlusPage readPage(long position) throws IOException {
+		this.file.seek(position);
+		byte[] buffer = new byte[BPlusPage.getSize(this.order)];
+		this.file.read(buffer);
+
+		return new BPlusPage(buffer, this.order);
 	}
 }
