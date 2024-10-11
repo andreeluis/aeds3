@@ -3,12 +3,11 @@ package index.InvertedList;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import db.Database;
 import model.IInvertedListStrategy;
-import model.InvertedListRegister;
 
 public class InvertedList implements IInvertedListStrategy {
     private String filePath;
@@ -22,27 +21,24 @@ public class InvertedList implements IInvertedListStrategy {
     }
 
     @Override
-    public void add(InvertedListRegister register) throws IOException {
-        // String[] keys = key.split(" ");
-        // try {
-        //     for (String string : keys) {
-        //         string = string.toLowerCase();
-        //         List<Long> stringPositions = getPositionByKey(string);
+    public void add(String key, int id) throws IOException {
+        try {
+            List<Integer> stringPositions = get(key);
+            // long wordPosition = getWordPosition(key);
 
-        //         if (stringPositions.isEmpty()) {
-        //             reversedListByNameFile.seek(reversedListByNameFile.length());
-        //             reversedListByNameFile.writeBoolean(false);
-        //             reversedListByNameFile.writeUTF(string);
-        //             reversedListByNameFile.writeInt(1);
-        //             reversedListByNameFile.writeLong(position);
-        //         } else {
-        //             // mark as tomb, add to eof
-        //         }
-        //     }
-        // } catch (IOException e) {
-        //     // TODO Auto-generated catch block
-        //     e.printStackTrace();
-        // }
+            if (stringPositions.isEmpty()) {
+                reversedListByNameFile.seek(reversedListByNameFile.length());
+                reversedListByNameFile.writeBoolean(false);
+                reversedListByNameFile.writeUTF(key);
+                reversedListByNameFile.writeInt(1);
+                reversedListByNameFile.writeInt(id);
+            } else {
+                // mark as tomb, add to eof
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -110,5 +106,25 @@ public class InvertedList implements IInvertedListStrategy {
 
     private static boolean isWordValid(String word) {
         return false; // TODO: implement this method
+    }
+
+    private long getWordPosition(String word) {
+        // return word position in inverted list file
+        try {
+            reversedListByNameFile.seek(0);
+            while (reversedListByNameFile.getFilePointer() < reversedListByNameFile.length()) {
+                long currentWordPosition = reversedListByNameFile.getFilePointer();
+                boolean tombstone = reversedListByNameFile.readBoolean();
+                String currentWord = reversedListByNameFile.readUTF();
+                int entries = reversedListByNameFile.readInt();
+                if (currentWord.equals(word) && !tombstone) {
+                    return currentWordPosition;
+                }
+                reversedListByNameFile.skipBytes(entries * 4);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 }
