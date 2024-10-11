@@ -3,19 +3,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
-import index.IndexStrategy;
+import model.IIndexStrategy;
 import index.extendedHash.ExtendedHash;
-// import index.btree.BTree;
+import index.bplustree.BPlusTree;
 import view.Menu;
 
 public class Main {
   private static String dbPath = "./db/";
-  private static List<IndexStrategy> indexes;
+  private static List<IIndexStrategy> indexes;
 
   public static void main(String[] args) {
-    indexes = new ArrayList<IndexStrategy>();
+    indexes = new ArrayList<IIndexStrategy>();
     try {
-      // indexes.add(new BTree(3, dbPath));
+      indexes.add(new BPlusTree(3, dbPath));
       indexes.add(new ExtendedHash(dbPath));
     } catch (Exception e) {}
 

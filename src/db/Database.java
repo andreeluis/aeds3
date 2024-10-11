@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 
 import index.Index;
-import index.IndexStrategy;
+import model.IIndexStrategy;
 import model.Movie;
 import sort.Sort;
 
@@ -21,10 +21,12 @@ public class Database {
   private int sortInMemoryRegisters;
   private Index index;
 
+  // fileExtension
   public static String getFileExtension() {
     return fileExtension;
   }
 
+  // filePath
   public String getFilePath() {
     return filePath;
   }
@@ -33,6 +35,7 @@ public class Database {
     this.filePath = filePath;
   }
 
+  // database
   public RandomAccessFile getDatabase() {
     return this.database;
   }
@@ -41,12 +44,14 @@ public class Database {
     return sortPathsNumber;
   }
 
+  // sortPathsNumber
   public void setSortPathsNumber(int sortPathsNumber) {
     if (sortPathsNumber > 0) {
       this.sortPathsNumber = sortPathsNumber;
     }
   }
 
+  // sortInMemoryRegisters
   public int getSortInMemoryRegisters() {
     return sortInMemoryRegisters;
   }
@@ -57,7 +62,8 @@ public class Database {
     }
   }
 
-  public Database(String filePath, List<IndexStrategy> indexes) throws FileNotFoundException {
+  // constructor
+  public Database(String filePath, List<IIndexStrategy> indexes) throws FileNotFoundException {
     setFilePath(filePath);
 
     String dbFilePath = this.filePath + "dados" + fileExtension;
@@ -277,7 +283,6 @@ public class Database {
 
           movie = new Movie(byteArrayMovie);
 
-
           if (movie.getId() == id) {
             database.seek(position);
             database.writeBoolean(true);
@@ -330,9 +335,9 @@ public class Database {
         sort.intercalation();
       } while (segments > sortPathsNumber); // if a path is completed sorted, the next intercalation will result one sorted segment
 
-      return true;
+      index.rebuild();
 
-      // TODO - rebuild index
+      return true;
     } catch (IOException e) {
       System.out.println("Erro ao ordenar registros.");
       return false;
@@ -354,6 +359,6 @@ public class Database {
     database.setLength(0);
     database.writeInt(lastId);
 
-    // TODO - remove index
+    index.clear();
   }
 }

@@ -6,9 +6,9 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
 import db.Database;
-import index.IndexStrategy;
+import model.IIndexStrategy;
 
-public class BPlusTree implements IndexStrategy {
+public class BPlusTree implements IIndexStrategy {
 	private int order;
 	private String filePath;
 	private RandomAccessFile file;
@@ -522,7 +522,7 @@ public class BPlusTree implements IndexStrategy {
 
 			if (diminuido < pa.getRegistersSize()) { // possui um irmão direito, pois não é o último filho do pai
 				paginaIrmaoDir = pa.childrens.get(diminuido + 1);
-				
+
 				pIrmaoDir = readPage(paginaIrmaoDir);
 			}
 

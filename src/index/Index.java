@@ -1,22 +1,25 @@
 package index;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
+import model.IIndexStrategy;
+import model.IInvertedListStrategy;
 
 public class Index {
-  private List<IndexStrategy> indexes = new ArrayList<IndexStrategy>();
-  private IndexStrategy currentIndexStrategy;
+  private List<IIndexStrategy> indexes = new ArrayList<IIndexStrategy>();
+  private List<IInvertedListStrategy> invertedLists = new ArrayList<IInvertedListStrategy>();
+  private IIndexStrategy currentIndexStrategy;
   private Database database;
 
-  public IndexStrategy getCurrentIndexStrategy() {
+  // currentIndexStrategy
+  public IIndexStrategy getCurrentIndexStrategy() {
     return currentIndexStrategy;
   }
 
-  public void setCurrentIndexStrategy(IndexStrategy currentIndexStrategy) {
+  public void setCurrentIndexStrategy(IIndexStrategy currentIndexStrategy) {
     this.currentIndexStrategy = currentIndexStrategy;
   }
 
@@ -24,10 +27,11 @@ public class Index {
     this.currentIndexStrategy = indexes.get(id);
   }
 
-  public Index(Database database, List<IndexStrategy> indexes) {
+  // constructor
+  public Index(Database database, List<IIndexStrategy> indexes) {
     this.database = database;
 
-    for (IndexStrategy indexStrategy : indexes) {
+    for (IIndexStrategy indexStrategy : indexes) {
       addStrategy(indexStrategy);
     }
 
@@ -38,54 +42,65 @@ public class Index {
     return indexes.size() > 0;
   }
 
-  public void addStrategy(IndexStrategy indexStrategy) {
+  public void addStrategy(IIndexStrategy indexStrategy) {
     indexes.add(indexStrategy);
 
-    try {
-      indexStrategy.build(this.database);
-    } catch (FileNotFoundException e) { }
+    // try {
+    //   indexStrategy.build(this.database);
+    // } catch (FileNotFoundException e) { }
   }
 
   /**
    * @param position
    * register's tombstone position
    */
-  public void add(int id, long position) {
-    try {
-      for (IndexStrategy indexStrategy : indexes) {
-        indexStrategy.add(id, position);
-      }
-    } catch (IOException e) { }
+  public void add(int id, long position) throws IOException {
+    for (IIndexStrategy indexStrategy : indexes) {
+      indexStrategy.add(id, position);
+    }
   }
 
   /**
    * Return the register's tombstone position
    */
-  public long get(int id) {
+  public long get(int id) throws IOException {
     long position = -1;
 
-    try {
-      position = currentIndexStrategy.get(id);
-    } catch (IOException e) { }
+    position = currentIndexStrategy.get(id);
 
     return position;
   }
 
-  public void update(int id, long newPosition) {
-    remove(id);
-    add(id, newPosition);
+  public List<Integer> get(String key) throws IOException {
+    List<Integer> positions = new ArrayList<>();
+
+    for (IInvertedListStrategy invertedList : invertedLists) {
+      List<Integer> invertedListPositions = invertedList.get(key);
+      positions.addAll(invertedListPositions);
+    }
+
+    return positions;
   }
 
-  public void remove(int id) {
-    try {
-      for (IndexStrategy indexStrategy : indexes) {
-        indexStrategy.remove(id);
-      }
-    } catch (IOException e) { }
+  public void update(int id, long newPosition) throws IOException {
+    this.remove(id);
+    this.add(id, newPosition);
+  }
+
+  public void remove(int id) throws IOException {
+    for (IIndexStrategy indexStrategy : indexes) {
+      indexStrategy.remove(id);
+    }
+  }
+
+  public void clear() throws IOException {
+    for (IIndexStrategy indexStrategy : indexes) {
+      indexStrategy.clear();
+    }
   }
 
   public void rebuild() throws IOException {
-    for (IndexStrategy indexStrategy : indexes) {
+    for (IIndexStrategy indexStrategy : indexes) {
       indexStrategy.clear();
       indexStrategy.build(database);
     }

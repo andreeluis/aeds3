@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import db.Database;
-import index.IndexStrategy;
+import model.IIndexStrategy;
 
-public class ExtendedHash implements IndexStrategy {
+public class ExtendedHash implements IIndexStrategy {
 
   private String filePath;
   private static final String dirFileName = "ExtendedHashDir";
