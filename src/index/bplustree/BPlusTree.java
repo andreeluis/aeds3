@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
 import db.Database;
-import model.IIndexStrategy;
+import model.interfaces.IIndexStrategy;
 
 public class BPlusTree implements IIndexStrategy {
 	private int order;

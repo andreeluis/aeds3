@@ -1,4 +1,4 @@
-package model;
+package model.interfaces;
 
 import java.io.IOException;
 

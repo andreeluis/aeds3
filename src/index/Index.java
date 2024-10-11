@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
-import model.IIndexStrategy;
-import model.IInvertedListStrategy;
+import model.interfaces.IIndexStrategy;
+import model.interfaces.IInvertedListStrategy;
 
 public class Index {
   private List<IIndexStrategy> indexes = new ArrayList<IIndexStrategy>();

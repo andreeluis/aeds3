@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import db.Database;
-import model.IIndexStrategy;
+import model.interfaces.IIndexStrategy;
 
 public class ExtendedHash implements IIndexStrategy {
 
