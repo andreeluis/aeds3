@@ -62,7 +62,7 @@ public class ExtendedHash implements IIndexStrategy {
   private void setDirectory() throws IOException {
     RandomAccessFile directoryFile = new RandomAccessFile(this.getDirectoryPath(), "rw");
 
-    this.setDirectory(new DirectoryManager(directoryFile));
+    this.setDirectory(new DirectoryManager(directoryFile, this.getBucketSize()));
   }
 
   // bucket
