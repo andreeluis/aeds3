@@ -58,4 +58,12 @@ class DirectoryManager {
             }
         }
     }
+
+    public boolean isEmpty() throws IOException {
+        return dirFile.length() == 0;
+    }
+
+    public void clear() throws IOException {
+        dirFile.setLength(0);
+    }
 }

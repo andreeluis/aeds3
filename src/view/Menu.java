@@ -184,7 +184,7 @@ public class Menu {
         break;
     }
 
-    if (!movies.isEmpty()) {
+    if (!movies.isEmpty() && movies.get(0) != null) {
       System.out.println("Filmes encontrados:");
       for (Movie movie : movies) {
         System.out.println(movie);

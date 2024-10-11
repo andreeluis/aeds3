@@ -12,34 +12,66 @@ import model.interfaces.InvertedListRegister;
 
 public class InvertedList implements IInvertedListStrategy {
     private String filePath;
-    private RandomAccessFile file;
+    private RandomAccessFile indexFile;
+    private RandomAccessFile dataFile;
+    private String field;
 
     // filePathName
     public String getFilePath() {
         return this.filePath;
     }
 
-    public void setFilePath(String filePath, String name) {
-        this.filePath = filePath + "InvertedList" + name + Database.getFileExtension();
+    public String getFilePath(String mode) {
+        return this.filePath + "InvertedList" + mode + Database.getFileExtension();
+
     }
 
-    // file
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    // indexFile
     public RandomAccessFile getFile() {
-        return this.file;
+        return this.indexFile;
     }
 
-    public void setFile(RandomAccessFile file) throws IOException {
-        this.file = file;
+    public void setIndexFile(RandomAccessFile indexFile) throws IOException {
+        this.indexFile = indexFile;
     }
 
-    private void setFile() throws IOException {
-        this.setFile(new RandomAccessFile(this.filePath, "rw"));
+    private void setIndexFile() throws IOException {
+        this.setIndexFile(new RandomAccessFile(this.getFilePath("Index"), "rw"));
+    }
+
+    // dataFile
+    public RandomAccessFile getDataFile() {
+        return this.dataFile;
+    }
+
+    public void setDataFile(RandomAccessFile dataFile) throws IOException {
+        this.dataFile = dataFile;
+    }
+
+    private void setDataFile() throws IOException {
+        this.setDataFile(new RandomAccessFile(this.getFilePath("Data"), "rw"));
+    }
+
+    // field
+    public String getField() {
+        return this.field;
+    }
+
+    public void setField(String field) {
+        // capitalize first letter
+        this.field = field;
     }
 
     // constructor
-    public InvertedList(String filePath, String name) throws IOException {
-        this.setFilePath(filePath, name);
-        this.setFile();
+    public InvertedList(String filePath, String field) throws IOException {
+        this.setField(field);
+        this.setFilePath(filePath);
+        this.setIndexFile();
+        this.setDataFile();
     }
 
     @Override
@@ -106,28 +138,28 @@ public class InvertedList implements IInvertedListStrategy {
         throw new UnsupportedOperationException("Unimplemented method 'clear'");
     }
 
-    @Override
-    public void build(Database database) throws FileNotFoundException {
-        // try {
-        // reversedListByNameFile = new RandomAccessFile(
-        // filePath + reversedListByNameFileName + Database.getFileExtension(),
-        // "rw");
+    // @Override
+    // public void build(Database database) throws FileNotFoundException {
+    //     // try {
+    //     // reversedListByNameFile = new RandomAccessFile(
+    //     // filePath + reversedListByNameFileName + Database.getFileExtension(),
+    //     // "rw");
 
-        // database.getDatabase().readInt(); // skips last id
-        // while (!database.isEndOfFile()) {
-        // boolean tombstone = database.getDatabase().readBoolean();
-        // int length = database.getDatabase().readInt();
-        // if (!tombstone) {
-        // byte[] byteArrayMovie = new byte[length];
-        // Movie movie = new Movie(byteArrayMovie);
-        // long position = database.getDatabase().getFilePointer();
-        // addRegistryByKey(movie.getTitle(), position);
-        // }
-        // }
-        // } catch (IOException e) {
-        // e.printStackTrace();
-        // }
-    }
+    //     // database.getDatabase().readInt(); // skips last id
+    //     // while (!database.isEndOfFile()) {
+    //     // boolean tombstone = database.getDatabase().readBoolean();
+    //     // int length = database.getDatabase().readInt();
+    //     // if (!tombstone) {
+    //     // byte[] byteArrayMovie = new byte[length];
+    //     // Movie movie = new Movie(byteArrayMovie);
+    //     // long position = database.getDatabase().getFilePointer();
+    //     // addRegistryByKey(movie.getTitle(), position);
+    //     // }
+    //     // }
+    //     // } catch (IOException e) {
+    //     // e.printStackTrace();
+    //     // }
+    // }
 
     private static boolean isWordValid(String word) {
         return false; // TODO: implement this method

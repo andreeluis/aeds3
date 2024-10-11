@@ -1,53 +1,82 @@
 package index;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
+import model.Movie;
 import model.interfaces.IIndexStrategy;
 import model.interfaces.IInvertedListStrategy;
 
 public class Index {
-  private List<IIndexStrategy> indexes = new ArrayList<IIndexStrategy>();
-  private List<IInvertedListStrategy> invertedLists = new ArrayList<IInvertedListStrategy>();
-  private IIndexStrategy currentIndexStrategy;
+  private List<IIndexStrategy> indexes = new ArrayList<>();
+  private List<IInvertedListStrategy> invertedLists = new ArrayList<>();
+  private IIndexStrategy currentIndex;
   private Database database;
 
   // currentIndexStrategy
-  public IIndexStrategy getCurrentIndexStrategy() {
-    return currentIndexStrategy;
+  public IIndexStrategy getCurrentIndex() {
+    return this.currentIndex;
   }
 
-  public void setCurrentIndexStrategy(IIndexStrategy currentIndexStrategy) {
-    this.currentIndexStrategy = currentIndexStrategy;
+  public void setCurrentIndex(IIndexStrategy currentIndex) {
+    this.currentIndex = currentIndex;
   }
 
-  public void changeCurrentIndexStrategy(int id) {
-    this.currentIndexStrategy = indexes.get(id);
+  public void changeCurrentIndex(int id) {
+    this.setCurrentIndex(this.indexes.get(id));
+  }
+
+  // database
+  public Database getDatabase() {
+    return this.database;
+  }
+
+  public void setDatabase(Database database) {
+    this.database = database;
   }
 
   // constructor
-  public Index(Database database, List<IIndexStrategy> indexes) {
-    this.database = database;
+  public Index(Database database, List<IIndexStrategy> indexes) throws IOException {
+    this.setDatabase(database);
 
     for (IIndexStrategy indexStrategy : indexes) {
       addStrategy(indexStrategy);
     }
 
-    currentIndexStrategy = indexes.get(0);
+    build();
+    changeCurrentIndex(0);
   }
 
-  public boolean isAvailabe() {
-    return indexes.size() > 0;
+  public void build() throws IOException {
+    RandomAccessFile dbFile = this.getDatabase().getFile();
+    dbFile.seek(0);
+    dbFile.skipBytes(Integer.BYTES); // skip lastId
+
+    while (!getDatabase().isEndOfFile()) {
+      long position = dbFile.getFilePointer();
+      boolean tombstone = dbFile.readBoolean();
+      int registerLength = dbFile.readInt();
+
+      if (!tombstone) {
+        byte[] byteArrayMovie = new byte[registerLength];
+        dbFile.read(byteArrayMovie);
+
+        add(new Movie(byteArrayMovie).getId(), position);
+      } else {
+        dbFile.skipBytes(registerLength);
+      }
+    }
   }
 
-  public void addStrategy(IIndexStrategy indexStrategy) {
+  public void addInvertedList(IInvertedListStrategy invertedList) {
+    invertedLists.add(invertedList);
+  }
+
+  public void addStrategy(IIndexStrategy indexStrategy) throws IOException {
     indexes.add(indexStrategy);
-
-    // try {
-    //   indexStrategy.build(this.database);
-    // } catch (FileNotFoundException e) { }
   }
 
   /**
@@ -64,22 +93,23 @@ public class Index {
    * Return the register's tombstone position
    */
   public long get(int id) throws IOException {
-    long position = -1;
-
-    position = currentIndexStrategy.get(id);
-
-    return position;
+    return this.getCurrentIndex().get(id);
   }
 
-  public List<Integer> get(String key) throws IOException {
-    List<Integer> positions = new ArrayList<>();
+  /**
+   * Return a list of IDs that contains the key
+   */
+  public List<Integer> get(String key, String field) throws IOException {
+    List<Integer> ids = new ArrayList<>();
 
     for (IInvertedListStrategy invertedList : invertedLists) {
-      List<Integer> invertedListPositions = invertedList.get(key);
-      positions.addAll(invertedListPositions);
+      if (invertedList.getField().equals(field)) {
+        ids = invertedList.get(key);
+        break;
+      }
     }
 
-    return positions;
+    return ids;
   }
 
   public void update(int id, long newPosition) throws IOException {
@@ -102,7 +132,15 @@ public class Index {
   public void rebuild() throws IOException {
     for (IIndexStrategy indexStrategy : indexes) {
       indexStrategy.clear();
-      indexStrategy.build(database);
+      build();
     }
+  }
+
+  public boolean isAvailabe() {
+    return indexes.size() > 0;
+  }
+
+  public boolean isInvertedListAvailable() {
+    return invertedLists.size() > 0;
   }
 }

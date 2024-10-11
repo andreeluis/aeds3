@@ -1,6 +1,5 @@
 package index.bplustree;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -655,12 +654,6 @@ public class BPlusTree implements IIndexStrategy {
 		}
 
 		return excluido;
-	}
-
-	@Override
-	public void build(Database database) throws FileNotFoundException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'build'");
 	}
 
 	@Override
