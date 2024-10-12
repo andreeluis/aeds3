@@ -2,6 +2,8 @@ package view;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import db.Database;
@@ -18,18 +20,17 @@ public class Menu {
   }
 
   private static void showMenu() {
-    // limpa o terminal
-    System.out.print("\033[H\033[2J");
-    System.out.flush();
+    clearTerminal();
 
     // mostra as opções disponiveis
     System.out.println("Gerenciador de filmes");
     System.out.println("  1 - Carregar filmes de um .csv");
-    System.out.println("  2 - Visualizar filme");
-    System.out.println("  3 - Atualizar filme");
-    System.out.println("  4 - Excluir filme");
-    System.out.println("  5 - Ordenar (e limpar) registros");
-    System.out.println("  6 - Operações com índice");
+    System.out.println("  2 - Adicionar novo filme");
+    System.out.println("  3 - Buscar por filmes");
+    System.out.println("  4 - Atualizar um filme");
+    System.out.println("  5 - Excluir um filme");
+    System.out.println("  6 - Ordenar (e limpar) registros");
+    System.out.println("  7 - Configurar índices");
 
     System.out.println("  0 - Sair");
 
@@ -44,23 +45,28 @@ public class Menu {
       op = sc.nextInt();
       sc.nextLine(); // limpa o buffer
 
+      clearTerminal();
+
       switch (op) {
         case 1:
           readFromCSV();
           break;
         case 2:
-          findMovie();
+          addMovie();
           break;
         case 3:
-          updateMovie();
+          findMovie();
           break;
         case 4:
-          deleteMovie();
+          updateMovie();
           break;
         case 5:
-          sortRegisters();
+          deleteMovie();
           break;
         case 6:
+          sortRegisters();
+          break;
+        case 7:
           index();
           break;
         case 0:
@@ -99,17 +105,105 @@ public class Menu {
     }
   }
 
+  private void addMovie() {
+    Movie movie = new Movie();
+
+    // Recebe os dados
+    System.out.print("  - Nome do filme: ");
+    movie.setTitle(sc.nextLine());
+
+    System.out.print("  - Resumo: ");
+    movie.setMovieInfo(sc.nextLine());
+
+    System.out.print("  - Ano de lançamento: ");
+    movie.setYear(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("  - Distribuidor: ");
+    movie.setDistributor(sc.nextLine());
+
+    System.out.print("  - Orçamento: ");
+    movie.setBudget(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("  - Domestic Opening: ");
+    movie.setDomesticOpening(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("  - Domestic Sales: ");
+    movie.setDomesticSales(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("  - International Sales: ");
+    movie.setInternationalSales(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("  - World Wide Sales: ");
+    movie.setWorldWideSales(ParseUtil.parseInt(sc.nextLine()));
+
+    System.out.print("  - Data de lançamento: ");
+    movie.setReleaseDate(ParseUtil.parseLong(sc.nextLine()));
+
+    System.out.print("  - Gênero: ");
+    movie.setGenre(sc.nextLine().split(","));
+
+    System.out.print("  - Duração: ");
+    movie.setRunningTime(sc.nextLine());
+
+    System.out.print("  - Licença: ");
+    movie.setLicense(sc.nextLine());
+
+    // atualiza o filme
+    database.create(movie);
+  }
+
   private void findMovie() {
-    System.out.print("Qual ID do filme buscado? ");
-    int id = sc.nextInt();
+    System.out.println("Como você quer buscar pelo filme? ");
+    System.out.println("  1 - Por ID");
+    System.out.println("  2 - Por título");
+    System.out.println("  3 - Por descrição");
+    System.out.println("  4 - Por título e descrição");
+    System.out.print("Selecione a opção desejada:");
+
+    int op = sc.nextInt();
     sc.nextLine(); // Limpa o buffer
 
-    Movie movie = database.read(id);
+    List<Movie> movies = new ArrayList<>();
+    String title, description;
+    switch (op) {
+      case 1:
+        System.out.print("Qual o ID do filme? ");
+        int id = sc.nextInt();
+        sc.nextLine(); // Limpa o buffer
+        movies.add(database.read(id));
+        break;
+      case 2:
+        System.out.print("Qual o título do filme? ");
+        title = sc.nextLine();
+        movies = database.searchByField(title, "title");
+        break;
+      case 3:
+        System.out.print("Qual a descrição do filme? ");
+        description = sc.nextLine();
+        movies = database.searchByField(description, "description");
+        break;
+      case 4:
+        String fields[] = { "title", "description" };
+        String search[] = new String[2];
 
-    if (movie != null) {
-      System.out.println(movie);
+        System.out.print("Qual o título do filme? ");
+        search[0] = sc.nextLine();
+        System.out.print("Qual a descrição do filme? ");
+        search[1] = sc.nextLine();
+
+        movies = database.searchByMultipleFields(search, fields);
+        break;
+      default:
+        break;
+    }
+
+    if (!movies.isEmpty() && movies.get(0) != null) {
+      System.out.println("Filmes encontrados:");
+      for (Movie movie : movies) {
+        System.out.println(movie);
+      }
     } else {
-      System.out.println("O filme não foi encontrado.");
+      System.out.println("Nenhum filme foi encontrado.");
     }
   }
 
@@ -204,6 +298,28 @@ public class Menu {
   }
 
   private void index() {
-    
+    System.out.println("Qual índice deseja configurar?");
+    System.out.println("  1 - Definir índice padrão");
+    System.out.println("  2 - Árvore B+");
+    System.out.println("  3 - Hash Extensível");
+    System.out.print("Selecione a opção desejada: ");
+    int op = sc.nextInt();
+    sc.nextLine(); // Limpa o buffer
+
+    switch (op) {
+      case 1:
+        break;
+      case 2:
+        break;
+      case 3:
+        break;
+      default:
+        break;
+    }
+  }
+
+  private static void clearTerminal() {
+    System.out.print("\033[H\033[2J");
+    System.out.flush();
   }
 }

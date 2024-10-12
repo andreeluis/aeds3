@@ -81,13 +81,13 @@ public class Sort {
   }
 
   public int distribution() throws IOException {
-    RandomAccessFile data = database.getDatabase();
+    RandomAccessFile data = database.getFile();
 
     // skips the lastId
     data.seek(0);
     data.readInt();
 
-    moviesHeap.fill(database.getDatabase());
+    moviesHeap.fill(database.getFile());
 
     int segment = 0;
     openTmpFiles();
@@ -136,9 +136,9 @@ public class Sort {
   }
 
   public void intercalation() throws IOException {
-    database.cleanDatabaseRegisters();
+    database.cleanRegisters();
 
-    RandomAccessFile data = database.getDatabase();
+    RandomAccessFile data = database.getFile();
 
     Movie[] movies = new Movie[pathsNumber];
     boolean[] endOfFiles = new boolean[pathsNumber];

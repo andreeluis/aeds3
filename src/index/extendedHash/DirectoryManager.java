@@ -5,16 +5,18 @@ import java.io.RandomAccessFile;
 
 class DirectoryManager {
     private RandomAccessFile dirFile;
+    private int bucketSize;
 
-    public DirectoryManager(RandomAccessFile dirFile) {
+    public DirectoryManager(RandomAccessFile dirFile, int bucketSize) {
         this.dirFile = dirFile;
+        this.bucketSize = bucketSize;
     }
 
     public void initializeDirectory(int globalDepth) throws IOException {
         dirFile.writeInt(globalDepth);
         dirFile.writeInt(2); // Initial number of buckets
         dirFile.writeLong(0); // Bucket 0 address
-        dirFile.writeLong(8 + 20 * 12); // Bucket 1 address
+        dirFile.writeLong(8 + this.bucketSize * 12); // Bucket 1 address
     }
 
     public int readGlobalDepth() throws IOException {
@@ -58,4 +60,12 @@ class DirectoryManager {
             }
         }
     }
+
+    public boolean isEmpty() throws IOException {
+        return dirFile.length() == 0;
+    }
+
+	public void clear() throws IOException {
+		this.dirFile.setLength(0);
+	}
 }

@@ -3,21 +3,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
-import index.IndexStrategy;
+import model.Movie;
+import model.interfaces.IIndex;
 import index.extendedHash.ExtendedHash;
-// import index.btree.BTree;
+import index.InvertedList.InvertedList;
+import index.bplustree.BPlusTree;
 import view.Menu;
 
 public class Main {
   private static String dbPath = "./db/";
-  private static List<IndexStrategy> indexes;
+  private static List<IIndex> indexes;
 
   public static void main(String[] args) {
-    indexes = new ArrayList<IndexStrategy>();
+    indexes = new ArrayList<IIndex>();
     try {
-      // indexes.add(new BTree(3, dbPath));
-      indexes.add(new ExtendedHash(dbPath));
-    } catch (Exception e) {}
+      indexes.add(new ExtendedHash(20, dbPath));
+      indexes.add(new BPlusTree(3, dbPath));
+      indexes.add(new InvertedList(dbPath, "title", Movie::getTitle));
+      indexes.add(new InvertedList(dbPath, "description", Movie::getMovieInfo));
+      //indexes.add(new InvertedList(dbPath, "description"));
+    } catch (Exception e) {
+      System.out.println("Erro ao criar índices.");
+      System.out.println(e);
+    }
 
     try {
       Database database = new Database(dbPath, indexes);

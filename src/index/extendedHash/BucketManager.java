@@ -10,6 +10,16 @@ class BucketManager {
     private RandomAccessFile bucketFile;
     private int bucketSize;
 
+    // bucketFile
+    public RandomAccessFile getBucketFile() {
+        return this.bucketFile;
+    }
+
+    // bucketSize
+    public int getBucketSize() {
+        return this.bucketSize;
+    }
+
     public BucketManager(RandomAccessFile bucketFile, int bucketSize) {
         this.bucketFile = bucketFile;
         this.bucketSize = bucketSize;
@@ -33,7 +43,7 @@ class BucketManager {
 
     public void addToBucket(long bucketAddress, int id, long position) throws IOException {
         bucketFile.seek(bucketAddress);
-        int localDepth = bucketFile.readInt();
+        bucketFile.readInt(); // Skip local depth
         int entries = bucketFile.readInt();
 
         bucketFile.skipBytes(entries * 12);
@@ -133,11 +143,10 @@ class BucketManager {
 
     public void removeFromBucket(long bucketAddress, int id) throws IOException {
         bucketFile.seek(bucketAddress);
-        int localDepth = bucketFile.readInt();
+        bucketFile.readInt(); // Skip local depth
         int entries = bucketFile.readInt();
 
         for (int i = 0; i < entries; i++) {
-            long entryAddress = bucketFile.getFilePointer();
             int currentId = bucketFile.readInt();
             bucketFile.skipBytes(8);
 
@@ -157,5 +166,9 @@ class BucketManager {
                 return;
             }
         }
+    }
+
+    public void clear() throws IOException {
+        bucketFile.setLength(0);
     }
 }

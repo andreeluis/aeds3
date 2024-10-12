@@ -1,93 +1,157 @@
 package index;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
+import model.Movie;
+import model.interfaces.IIndex;
+import model.interfaces.IIndexStrategy;
+import model.interfaces.IInvertedListStrategy;
 
 public class Index {
-  private List<IndexStrategy> indexes = new ArrayList<IndexStrategy>();
-  private IndexStrategy currentIndexStrategy;
+  private List<IIndexStrategy> indexes = new ArrayList<>();
+  private List<IInvertedListStrategy> invertedLists = new ArrayList<>();
+  private IIndexStrategy currentIndex;
   private Database database;
 
-  public IndexStrategy getCurrentIndexStrategy() {
-    return currentIndexStrategy;
+  // currentIndexStrategy
+  public IIndexStrategy getCurrentIndex() {
+    return this.currentIndex;
   }
 
-  public void setCurrentIndexStrategy(IndexStrategy currentIndexStrategy) {
-    this.currentIndexStrategy = currentIndexStrategy;
+  public void setCurrentIndex(IIndexStrategy currentIndex) {
+    this.currentIndex = currentIndex;
   }
 
-  public void changeCurrentIndexStrategy(int id) {
-    this.currentIndexStrategy = indexes.get(id);
+  public void changeCurrentIndex(int id) {
+    this.setCurrentIndex(this.indexes.get(id));
   }
 
-  public Index(Database database, List<IndexStrategy> indexes) {
+  // database
+  public Database getDatabase() {
+    return this.database;
+  }
+
+  public void setDatabase(Database database) {
     this.database = database;
+  }
 
-    for (IndexStrategy indexStrategy : indexes) {
-      addStrategy(indexStrategy);
+  // constructor
+  public Index(Database database, List<IIndex> indexes) throws IOException {
+    this.setDatabase(database);
+
+    for (IIndex index : indexes) {
+      if (index instanceof IIndexStrategy) {
+        this.addStrategy((IIndexStrategy) index);
+      } else if (index instanceof IInvertedListStrategy) {
+        this.addInvertedList((IInvertedListStrategy) index);
+      }
     }
 
-    currentIndexStrategy = indexes.get(0);
+    build();
+    changeCurrentIndex(0);
   }
 
-  public boolean isAvailabe() {
-    return indexes.size() > 0;
+  public void build() throws IOException {
+    RandomAccessFile dbFile = this.getDatabase().getFile();
+    dbFile.seek(0);
+    dbFile.skipBytes(Integer.BYTES); // skip lastId
+
+    while (!getDatabase().isEndOfFile()) {
+      long position = dbFile.getFilePointer();
+      boolean tombstone = dbFile.readBoolean();
+      int registerLength = dbFile.readInt();
+
+      if (!tombstone) {
+        byte[] byteArrayMovie = new byte[registerLength];
+        dbFile.read(byteArrayMovie);
+
+        add(new Movie(byteArrayMovie), position);
+      } else {
+        dbFile.skipBytes(registerLength);
+      }
+    }
   }
 
-  public void addStrategy(IndexStrategy indexStrategy) {
+  public void addInvertedList(IInvertedListStrategy invertedList) {
+    invertedLists.add(invertedList);
+  }
+
+  public void addStrategy(IIndexStrategy indexStrategy) throws IOException {
     indexes.add(indexStrategy);
-
-    try {
-      indexStrategy.build(this.database);
-    } catch (FileNotFoundException e) { }
   }
 
   /**
    * @param position
    * register's tombstone position
    */
-  public void add(int id, long position) {
-    try {
-      for (IndexStrategy indexStrategy : indexes) {
-        indexStrategy.add(id, position);
-      }
-    } catch (IOException e) { }
+  public void add(Movie movie, long position) throws IOException {
+    for (IIndexStrategy indexStrategy : indexes) {
+      indexStrategy.add(movie.getId(), position);
+    }
+
+    for (IInvertedListStrategy invertedList : invertedLists) {
+      invertedList.add(movie);
+    }
   }
 
   /**
    * Return the register's tombstone position
    */
-  public long get(int id) {
-    long position = -1;
-
-    try {
-      position = currentIndexStrategy.get(id);
-    } catch (IOException e) { }
-
-    return position;
+  public long get(int id) throws IOException {
+    return this.getCurrentIndex().get(id);
   }
 
-  public void update(int id, long newPosition) {
-    remove(id);
-    add(id, newPosition);
-  }
+  /**
+   * Return a list of IDs that contains the key
+   */
+  public List<Integer> get(String key, String field) throws IOException {
+    List<Integer> ids = new ArrayList<>();
 
-  public void remove(int id) {
-    try {
-      for (IndexStrategy indexStrategy : indexes) {
-        indexStrategy.remove(id);
+    for (IInvertedListStrategy invertedList : invertedLists) {
+      if (invertedList.getField().equals(field)) {
+        ids = invertedList.get(key);
+        break;
       }
-    } catch (IOException e) { }
+    }
+
+    return ids;
+  }
+
+  public void update(Movie movie, long newPosition) throws IOException {
+    this.remove(movie);
+    this.add(movie, newPosition);
+  }
+
+  public void remove(Movie movie) throws IOException {
+    for (IIndexStrategy indexStrategy : indexes) {
+      indexStrategy.remove(movie.getId());
+    }
+
+    for (IInvertedListStrategy invertedList : invertedLists) {
+      invertedList.remove(movie);
+    }
+  }
+
+  public void clear() throws IOException {
+    for (IIndexStrategy indexStrategy : indexes) {
+      indexStrategy.clear();
+    }
   }
 
   public void rebuild() throws IOException {
-    for (IndexStrategy indexStrategy : indexes) {
-      indexStrategy.clear();
-      indexStrategy.build(database);
-    }
+    clear();
+    build();
+  }
+
+  public boolean isAvailabe() {
+    return indexes.size() > 0;
+  }
+
+  public boolean isInvertedListAvailable() {
+    return invertedLists.size() > 0;
   }
 }

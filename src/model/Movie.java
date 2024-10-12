@@ -140,6 +140,11 @@ public class Movie implements Comparable<Movie> {
     }
   }
 
+  // releaseDate
+  public Date getReleaseDate() {
+    return releaseDate;
+  }
+
   public byte[] getReleaseDateByteArray() throws IOException {
     long miliseconds = releaseDate.getTime();
 
@@ -149,11 +154,6 @@ public class Movie implements Comparable<Movie> {
     data.writeLong(miliseconds);
 
     return output.toByteArray();
-  }
-
-  // releaseDate
-  public Date getReleaseDate() {
-    return releaseDate;
   }
 
   public void setReleaseDate(Date releaseDate) {
@@ -184,6 +184,7 @@ public class Movie implements Comparable<Movie> {
       genreString.append(g);
       genreString.append(",");
     }
+
     genreString.deleteCharAt(genreString.length() - 1);
     genreString.append(" ]");
 
@@ -300,6 +301,7 @@ public class Movie implements Comparable<Movie> {
     this.license = new String(licenseArray);
   }
 
+  // lastId
   public static int getLastId() {
     return lastId;
   }
@@ -308,6 +310,7 @@ public class Movie implements Comparable<Movie> {
     Movie.lastId = lastId;
   }
 
+  // constructors
   public Movie() {
     this.setId(-1);
   }
@@ -401,7 +404,8 @@ public class Movie implements Comparable<Movie> {
   public String toString() {
     return "[" + this.getId() + "]"
         + " " + this.getTitle()
-        + " (" + this.getLicense() + ")"
+        + ": " + this.getMovieInfo()
+        + " (" + this.getYear() + ")"
         + " " + this.getGenreString();
   }
 
