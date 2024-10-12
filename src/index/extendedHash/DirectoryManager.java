@@ -65,7 +65,7 @@ class DirectoryManager {
         return dirFile.length() == 0;
     }
 
-    public void clear() throws IOException {
-        dirFile.setLength(0);
-    }
+	public void clear() throws IOException {
+		this.dirFile.setLength(0);
+	}
 }

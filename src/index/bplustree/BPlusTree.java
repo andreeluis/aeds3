@@ -658,8 +658,9 @@ public class BPlusTree implements IIndexStrategy {
 
 	@Override
 	public void clear() throws IOException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'clear'");
+		this.file.setLength(0);
+		this.file.writeLong(-1);
+		this.file.writeLong(-1);
 	}
 
 	private BPlusPage readPage(long position) throws IOException {

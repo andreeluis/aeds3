@@ -3,10 +3,11 @@ package db;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.List;
 
 import index.Index;
-import model.interfaces.IIndexStrategy;
+import model.interfaces.IIndex;
 import model.Movie;
 import sort.Sort;
 
@@ -63,7 +64,7 @@ public class Database {
   }
 
   // constructor
-  public Database(String filePath, List<IIndexStrategy> indexes) throws FileNotFoundException {
+  public Database(String filePath, List<IIndex> indexes) throws FileNotFoundException {
     setFilePath(filePath);
 
     String dbFilePath = this.filePath + "dados" + fileExtension;
@@ -110,7 +111,7 @@ public class Database {
 
       // add to indexes
       if (index.isAvailabe()) {
-        index.add(lastId, position);
+        index.add(movie, position);
       }
     } catch (IOException e) {
       System.out.println("Erro ao escrever novo registro.");
@@ -171,6 +172,64 @@ public class Database {
     }
 
     return found ? movie : null;
+  }
+
+  public List<Movie> searchByField(String searchString, String field) {
+    List<Integer> ids = new ArrayList<>();
+    List<Movie> movies = new ArrayList<>();
+    String[] words = searchString.split(" ");
+
+    try {
+      for (String word : words) {
+        if (ids == null || ids.isEmpty()) {
+          ids.addAll(index.get(field, word));
+        } else {
+          ids.retainAll(index.get(field, word));
+        }
+      }
+
+      for (int id : ids) {
+        Movie movie = read(id);
+        if (movie != null) {
+          movies.add(movie);
+        }
+      }
+    } catch (IOException e) {
+      System.out.println("Erro ao buscar registros por título.");
+      System.out.println(e);
+    }
+
+    return movies;
+  }
+
+  public List<Movie> searchByMultipleFields(String[] searchString, String[] fields) {
+    // early return
+    if (searchString.length != fields.length) {
+      System.out.println("Erro ao buscar registros por múltiplos campos.");
+      return null;
+    }
+
+    List<Integer> ids = new ArrayList<>();
+    List<Movie> movies = new ArrayList<>();
+
+    try {
+      for (int i = 0; i < fields.length; i++) {
+        String[] words = searchString[i].split(" ");
+
+        for (String word : words) {
+          if (ids == null || ids.isEmpty()) {
+            ids.addAll(index.get(fields[i], word));
+          } else {
+            ids.retainAll(index.get(fields[i], word));
+          }
+        }
+      }
+    } catch (IOException e) {
+      System.out.println("Erro ao buscar registros por título.");
+      System.out.println(e);
+    }
+
+    return movies;
   }
 
   public Movie update(int id, Movie newMovie) {
@@ -242,7 +301,7 @@ public class Database {
           file.writeInt(newByteArrayMovie.length); // registerLength
           file.write(newByteArrayMovie); // register
 
-          index.update(id, newPosition);
+          index.update(newMovie, newPosition);
         } else {
           file.writeBoolean(false); // tombstone
           file.writeInt(registerLength); // registerLength
@@ -292,7 +351,7 @@ public class Database {
             file.seek(position);
             file.writeBoolean(true);
 
-            index.remove(id);
+            index.remove(movie);
 
             deleted = true;
           }

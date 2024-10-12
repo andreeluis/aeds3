@@ -7,6 +7,7 @@ import java.util.List;
 
 import db.Database;
 import model.Movie;
+import model.interfaces.IIndex;
 import model.interfaces.IIndexStrategy;
 import model.interfaces.IInvertedListStrategy;
 
@@ -39,11 +40,15 @@ public class Index {
   }
 
   // constructor
-  public Index(Database database, List<IIndexStrategy> indexes) throws IOException {
+  public Index(Database database, List<IIndex> indexes) throws IOException {
     this.setDatabase(database);
 
-    for (IIndexStrategy indexStrategy : indexes) {
-      addStrategy(indexStrategy);
+    for (IIndex index : indexes) {
+      if (index instanceof IIndexStrategy) {
+        this.addStrategy((IIndexStrategy) index);
+      } else if (index instanceof IInvertedListStrategy) {
+        this.addInvertedList((IInvertedListStrategy) index);
+      }
     }
 
     build();
@@ -64,7 +69,7 @@ public class Index {
         byte[] byteArrayMovie = new byte[registerLength];
         dbFile.read(byteArrayMovie);
 
-        add(new Movie(byteArrayMovie).getId(), position);
+        add(new Movie(byteArrayMovie), position);
       } else {
         dbFile.skipBytes(registerLength);
       }
@@ -83,9 +88,13 @@ public class Index {
    * @param position
    * register's tombstone position
    */
-  public void add(int id, long position) throws IOException {
+  public void add(Movie movie, long position) throws IOException {
     for (IIndexStrategy indexStrategy : indexes) {
-      indexStrategy.add(id, position);
+      indexStrategy.add(movie.getId(), position);
+    }
+
+    for (IInvertedListStrategy invertedList : invertedLists) {
+      invertedList.add(movie);
     }
   }
 
@@ -112,14 +121,18 @@ public class Index {
     return ids;
   }
 
-  public void update(int id, long newPosition) throws IOException {
-    this.remove(id);
-    this.add(id, newPosition);
+  public void update(Movie movie, long newPosition) throws IOException {
+    this.remove(movie);
+    this.add(movie, newPosition);
   }
 
-  public void remove(int id) throws IOException {
+  public void remove(Movie movie) throws IOException {
     for (IIndexStrategy indexStrategy : indexes) {
-      indexStrategy.remove(id);
+      indexStrategy.remove(movie.getId());
+    }
+
+    for (IInvertedListStrategy invertedList : invertedLists) {
+      invertedList.remove(movie);
     }
   }
 
@@ -130,10 +143,8 @@ public class Index {
   }
 
   public void rebuild() throws IOException {
-    for (IIndexStrategy indexStrategy : indexes) {
-      indexStrategy.clear();
-      build();
-    }
+    clear();
+    build();
   }
 
   public boolean isAvailabe() {

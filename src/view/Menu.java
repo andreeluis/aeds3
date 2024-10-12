@@ -157,12 +157,14 @@ public class Menu {
     System.out.println("  1 - Por ID");
     System.out.println("  2 - Por título");
     System.out.println("  3 - Por descrição");
-    System.out.println("Selecione a opção desejada:");
+    System.out.println("  4 - Por título e descrição");
+    System.out.print("Selecione a opção desejada:");
 
     int op = sc.nextInt();
     sc.nextLine(); // Limpa o buffer
 
     List<Movie> movies = new ArrayList<>();
+    String title, description;
     switch (op) {
       case 1:
         System.out.print("Qual o ID do filme? ");
@@ -171,14 +173,25 @@ public class Menu {
         movies.add(database.read(id));
         break;
       case 2:
-        //System.out.print("Qual o título do filme? ");
-        //String title = sc.nextLine();
-        //movies = database.read(title, "title");
+        System.out.print("Qual o título do filme? ");
+        title = sc.nextLine();
+        movies = database.searchByField(title, "title");
         break;
       case 3:
-        //System.out.print("Qual a descrição do filme? ");
-        //String description = sc.nextLine();
-        //movies = database.read(description, "description");
+        System.out.print("Qual a descrição do filme? ");
+        description = sc.nextLine();
+        movies = database.searchByField(description, "description");
+        break;
+      case 4:
+        String fields[] = { "title", "description" };
+        String search[] = new String[2];
+
+        System.out.print("Qual o título do filme? ");
+        search[0] = sc.nextLine();
+        System.out.print("Qual a descrição do filme? ");
+        search[1] = sc.nextLine();
+
+        movies = database.searchByMultipleFields(search, fields);
         break;
       default:
         break;

@@ -89,12 +89,12 @@ public class ExtendedHash implements IIndexStrategy {
     this.setBucket();
 
     if (directory.isEmpty()) {
-      setGlobalDepth(1);
-      
+      this.setGlobalDepth(1);
+
       directory.initializeDirectory(globalDepth);
       bucket.initializeBuckets();
     } else {
-      globalDepth = directory.readGlobalDepth();
+      this.setGlobalDepth(directory.readGlobalDepth());
     }
   }
 
@@ -153,8 +153,10 @@ public class ExtendedHash implements IIndexStrategy {
 
     setGlobalDepth(1);
 
-    directory.initializeDirectory(globalDepth);
-    bucket.initializeBuckets();
+    if (directory.isEmpty()) {
+      directory.initializeDirectory(globalDepth);
+      bucket.initializeBuckets();
+    }
   }
 
   private int hash(int id) {
