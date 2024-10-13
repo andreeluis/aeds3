@@ -13,6 +13,7 @@ class DirectoryManager {
     }
 
     public void initializeDirectory(int globalDepth) throws IOException {
+        System.out.println("inicializar diretorio");
         dirFile.writeInt(globalDepth);
         dirFile.writeInt(2); // Initial number of buckets
         dirFile.writeLong(0); // Bucket 0 address
@@ -66,6 +67,6 @@ class DirectoryManager {
     }
 
 	public void clear() throws IOException {
-		this.dirFile.setLength(0);
+        dirFile.setLength(0);
 	}
 }

@@ -151,11 +151,13 @@ public class ExtendedHash implements IIndexStrategy {
     directory.clear();
     bucket.clear();
 
-    setGlobalDepth(1);
-
+    
     if (directory.isEmpty()) {
+      setGlobalDepth(1);
       directory.initializeDirectory(globalDepth);
       bucket.initializeBuckets();
+    } else {
+      this.setGlobalDepth(directory.readGlobalDepth());
     }
   }
 

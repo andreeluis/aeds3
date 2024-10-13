@@ -4,11 +4,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import index.Index;
-import model.interfaces.IIndex;
 import model.Movie;
+import model.interfaces.IIndex;
 import sort.Sort;
 
 // Estrutura do arquivo sequencial
@@ -175,23 +177,21 @@ public class Database {
   }
 
   public List<Movie> searchByField(String searchString, String field) {
-    List<Integer> ids = new ArrayList<>();
+    Set<Integer> ids = new HashSet<>();
     List<Movie> movies = new ArrayList<>();
     String[] words = searchString.split(" ");
 
     try {
       for (String word : words) {
-        if (ids == null || ids.isEmpty()) {
-          ids.addAll(index.get(field, word));
-        } else {
-          ids.retainAll(index.get(field, word));
-        }
+        ids.addAll(index.get(word, field));
       }
 
       for (int id : ids) {
-        Movie movie = read(id);
-        if (movie != null) {
-          movies.add(movie);
+        if (id != -1) {
+          Movie movie = read(id);
+          if (movie != null) {
+            movies.add(movie);
+          }
         }
       }
     } catch (IOException e) {
@@ -218,9 +218,9 @@ public class Database {
 
         for (String word : words) {
           if (ids == null || ids.isEmpty()) {
-            ids.addAll(index.get(fields[i], word));
+            ids.addAll(index.get(word, fields[i]));
           } else {
-            ids.retainAll(index.get(fields[i], word));
+            ids.retainAll(index.get(word, fields[i]));
           }
         }
       }
