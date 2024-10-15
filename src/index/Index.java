@@ -109,6 +109,7 @@ public class Index {
    * Return a list of IDs that contains the key
    */
   public List<Integer> get(String key, String field) throws IOException {
+    System.out.println(key);
     List<Integer> ids = new ArrayList<>();
 
     for (IInvertedListStrategy invertedList : invertedLists) {

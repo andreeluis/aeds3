@@ -3,11 +3,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import db.Database;
-import model.Movie;
-import model.interfaces.IIndex;
-import index.extendedHash.ExtendedHash;
 import index.InvertedList.InvertedList;
 import index.bplustree.BPlusTree;
+import index.extendedHash.ExtendedHash;
+import model.Movie;
+import model.interfaces.IIndex;
 import view.Menu;
 
 public class Main {
