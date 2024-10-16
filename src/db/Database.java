@@ -183,15 +183,17 @@ public class Database {
 
     try {
       for (String word : words) {
-        ids.addAll(index.get(word, field));
+        if (ids == null || ids.isEmpty()) {
+          ids.addAll(index.get(word, field));
+        } else {
+          ids.retainAll(index.get(word, field));
+        }
       }
 
       for (int id : ids) {
-        if (id != -1) {
-          Movie movie = read(id);
-          if (movie != null) {
-            movies.add(movie);
-          }
+        Movie movie = read(id);
+        if (movie != null) {
+          movies.add(movie);
         }
       }
     } catch (IOException e) {
@@ -222,6 +224,13 @@ public class Database {
           } else {
             ids.retainAll(index.get(word, fields[i]));
           }
+        }
+      }
+
+      for (int id : ids) {
+        Movie movie = read(id);
+        if (movie != null) {
+          movies.add(movie);
         }
       }
     } catch (IOException e) {

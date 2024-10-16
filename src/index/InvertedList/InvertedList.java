@@ -123,12 +123,9 @@ public class InvertedList implements IInvertedListStrategy {
 
     @Override
     public List<Integer> get(String key) throws IOException {
-        System.out.println(key);
         String processedKey = key.toLowerCase().trim();
         if (!isWordValid(processedKey)) {
-            List<Integer> invalidList = new ArrayList<>();
-            invalidList.add(-1);
-            return invalidList;
+            return new ArrayList<>();
         }
 
         List<Integer> ids = new ArrayList<>();
