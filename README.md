@@ -8,21 +8,20 @@ The dataset used in the projects is available at [Kaggle](https://www.kaggle.com
 
 | Column Name | Description |
 | --- | --- |
-|  | *int*: id |
+| ID | *int*: ID |
 | Title | *String*: Movie Name |
-| Movie Info | *String*: Movies Brief Introduction |
-| Year |  |
-| Distributor | *String*: Dsitributor Name |
-| Budget (in $) |  |
-| Domestic Opening (in $) |  |
+| Movie Info | *String*: Movies Brief Description |
+| Year | *int*: Year |
+| Distributor | *String*: Distributor Name |
+| Budget (in $) | *int*: Budget Of The Movie |
+| Domestic Opening (in $) | *int*: Domestic Opening Of The Movie |
 | Domestic Sales (in $) | *int*: Domestic Sales Of The Movie |
 | International Sales (in $) | *int*: International Sales Of The Movie |
 | World Wide Sales (in $) | *int*: World Sales Of The Movie |
-| Release Date | *String*: Original Release Date |
+| Release Date | *Long*: Release Date |
 | Genre | *List<String>*: Genres The Movie Belongs To |
 | Running Time | *String*: Movie Runtime |
 | License | *String*: License |
-
 
 
 ## TPs
@@ -32,6 +31,9 @@ The projects are divided into the following TPs:
 	Presentation video on [YouTube](https://www.youtube.com/watch?v=ulDujdI2U3I).
 
 - [TP 02](tp02): File Indexing Manipulation with B+ Tree, Hash and Inverted List
+
+	Presentation video on [YouTube](https://www.youtube.com/watch?v=a_AgYJ3VfkE).
+
 - [TP 03](tp03): Huffman and LZW compression
 - [TP 04](tp04): Pattern Matching and Cryptography
 
