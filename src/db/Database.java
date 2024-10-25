@@ -3,30 +3,32 @@ package db;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 
-import index.Index;
-import model.Movie;
-import model.interfaces.IIndex;
-import sort.Sort;
+import model.Register;
+import model.RegisterPosition;
 
-// Estrutura do arquivo sequencial
-// LAST_ID; [lapide1; tam1; id1; reg1]; [lapide2; tam2; id2; reg2];
-
-public class Database {
-  private static final String fileExtension = ".aeds3";
+/**
+ * The database file is a sequential file with the following structure:
+ * LAST_ID; [tombstone1; registerLength1; register1]; [tombstone2;
+ * registerLength2; register2]; ...
+ *
+ * @param <T> Type of the register
+ */
+public class Database<T extends Register> {
   private String filePath;
   private RandomAccessFile file;
-  private int sortPathsNumber;
-  private int sortInMemoryRegisters;
-  private Index index;
+  //private int sortPathsNumber;
+  //private int sortInMemoryRegisters;
+  // private Index index;
+
+  private Constructor<T> constructor;
 
   // fileExtension
   public static String getFileExtension() {
-    return fileExtension;
+    return ".aeds3";
   }
 
   // filePath
@@ -43,33 +45,35 @@ public class Database {
     return this.file;
   }
 
-  public int getSortPathsNumber() {
-    return sortPathsNumber;
-  }
+  // public int getSortPathsNumber() {
+  //   return sortPathsNumber;
+  // }
 
-  // sortPathsNumber
-  public void setSortPathsNumber(int sortPathsNumber) {
-    if (sortPathsNumber > 0) {
-      this.sortPathsNumber = sortPathsNumber;
-    }
-  }
+  // // sortPathsNumber
+  // public void setSortPathsNumber(int sortPathsNumber) {
+  //   if (sortPathsNumber > 0) {
+  //     this.sortPathsNumber = sortPathsNumber;
+  //   }
+  // }
 
-  // sortInMemoryRegisters
-  public int getSortInMemoryRegisters() {
-    return sortInMemoryRegisters;
-  }
+  // // sortInMemoryRegisters
+  // public int getSortInMemoryRegisters() {
+  //   return sortInMemoryRegisters;
+  // }
 
-  public void setSortInMemoryRegisters(int sortInMemoryRegisters) {
-    if (sortInMemoryRegisters > 0) {
-      this.sortInMemoryRegisters = sortInMemoryRegisters;
-    }
-  }
+  // public void setSortInMemoryRegisters(int sortInMemoryRegisters) {
+  //   if (sortInMemoryRegisters > 0) {
+  //     this.sortInMemoryRegisters = sortInMemoryRegisters;
+  //   }
+  // }
 
   // constructor
-  public Database(String filePath, List<IIndex> indexes) throws FileNotFoundException {
+  // public Database(String filePath, List<IIndex> indexes, Constructor<T> constructor) throws FileNotFoundException {
+  public Database(String filePath, Constructor<T> constructor) throws FileNotFoundException {
     setFilePath(filePath);
+    this.constructor = constructor;
 
-    String dbFilePath = this.filePath + "dados" + fileExtension;
+    String dbFilePath = this.filePath + "dados" + getFileExtension();
     this.file = new RandomAccessFile(dbFilePath, "rw");
 
     try {
@@ -82,20 +86,20 @@ public class Database {
       System.out.println(e);
     }
 
-    try {
-      this.index = new Index(this, indexes);
-    } catch (IOException e) {
-      System.out.println("Erro ao criar o índice.");
-      System.out.println(e);
-    }
+    // try {
+    // this.index = new Index(this, indexes);
+    // } catch (IOException e) {
+    // System.out.println("Erro ao criar o índice.");
+    // System.out.println(e);
+    // }
   }
 
-  public void create(Movie movie) {
+  public void insert(T register) {
     try {
       // reads the lastId and assigns it to the new register
       file.seek(0);
       int lastId = file.readInt();
-      movie.setId(++lastId);
+      register.setId(++lastId);
 
       // updates lastId
       file.seek(0);
@@ -106,316 +110,270 @@ public class Database {
       file.seek(position);
 
       // write register
-      byte[] byteArrayMovie = movie.toByteArray();
+      byte[] byteArrayRegister = register.toByteArray();
       file.writeBoolean(false); // tombstone
-      file.writeInt(byteArrayMovie.length); // registerLength
-      file.write(byteArrayMovie); // register
+      file.writeInt(byteArrayRegister.length); // registerLength
+      file.write(byteArrayRegister); // register
 
-      // add to indexes
-      if (index.isAvailabe()) {
-        index.add(movie, position);
-      }
+      // TODO - add to indexes
+      // if (index.isAvailable()) {
+      // index.add(register, position);
+      // }
     } catch (IOException e) {
       System.out.println("Erro ao escrever novo registro.");
       System.out.println(e);
     }
   }
 
-  public Movie read(int id) {
-    Movie movie = null;
-    boolean found = false;
-
+  public Optional<T> select(int id) {
     try {
-      // reads the lastId
+      // reads lastId
       file.seek(0);
       int lastId = file.readInt();
 
       // early return
       if (id > lastId) {
-        return null;
+        return Optional.empty();
       }
 
-      if (index.isAvailabe()) {
-        // if has index availabe, get position from index
-        long position = index.get(id);
+      // if (index.isAvailable()) {
+      // long position = index.get(id);
 
-        if (position != -1) {
-          file.seek(position);
+      // if (position != -1) {
+      // T register = constructor.newInstance();
 
-          file.readBoolean(); // skip tombstone (always false)
-          int registerLength = file.readInt();
+      // file.seek(position);
+      // file.readBoolean(); // skip tombstone (always false)
+      // int registerLength = file.readInt();
 
-          byte[] byteArrayMovie = new byte[registerLength];
-          file.read(byteArrayMovie);
-          movie = new Movie(byteArrayMovie);
+      // byte[] byteArrayRegister = new byte[registerLength];
+      // file.read(byteArrayRegister);
 
-          found = movie.getId() == id;
-        }
-      } else {
-        // if has no index perform linear search
-        while (!found && !isEndOfFile()) {
-          boolean tombstone = file.readBoolean();
-          int registerLength = file.readInt();
+      // register.fromByteArray(byteArrayRegister);
+      // return Optional.of(register);
+      // }
+      // } else {
+      boolean found = false;
 
-          if (!tombstone) {
-            byte[] byteArrayMovie = new byte[registerLength];
-            file.read(byteArrayMovie);
-            movie = new Movie(byteArrayMovie);
+      while (!found && !isEndOfFile()) {
+        boolean tombstone = file.readBoolean();
+        int registerLength = file.readInt();
 
-            found = movie.getId() == id;
-          } else {
-            file.skipBytes(registerLength);
+        if (!tombstone) {
+          byte[] byteArrayRegister = new byte[registerLength];
+          file.read(byteArrayRegister);
+          T register = constructor.newInstance();
+          register.fromByteArray(byteArrayRegister);
+
+          if (register.getId() == id) {
+            found = true;
+            return Optional.of(register);
           }
+        } else {
+          file.skipBytes(registerLength);
         }
       }
+      // }
     } catch (IOException e) {
       System.out.println("Erro ao buscar registro.");
       System.out.println(e);
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      System.out.println("Erro ao buscar registro usando índice.");
+      e.printStackTrace();
     }
 
-    return found ? movie : null;
+    return Optional.empty();
   }
 
-  public List<Movie> searchByField(String searchString, String field) {
-    Set<Integer> ids = new HashSet<>();
-    List<Movie> movies = new ArrayList<>();
-    String[] words = searchString.split(" ");
+  // public Optional<List<T>> select() {
+  // List<T> registers = new ArrayList<>();
 
+  // return Optional.of(registers);
+  // }
+
+  public Optional<T> update(int id, T newRegister) {
     try {
-      for (String word : words) {
-        if (ids == null || ids.isEmpty()) {
-          ids.addAll(index.get(word, field));
-        } else {
-          ids.retainAll(index.get(word, field));
-        }
-      }
-
-      for (int id : ids) {
-        Movie movie = read(id);
-        if (movie != null) {
-          movies.add(movie);
-        }
-      }
-    } catch (IOException e) {
-      System.out.println("Erro ao buscar registros por título.");
-      System.out.println(e);
-    }
-
-    return movies;
-  }
-
-  public List<Movie> searchByMultipleFields(String[] searchString, String[] fields) {
-    // early return
-    if (searchString.length != fields.length) {
-      System.out.println("Erro ao buscar registros por múltiplos campos.");
-      return null;
-    }
-
-    List<Integer> ids = new ArrayList<>();
-    List<Movie> movies = new ArrayList<>();
-
-    try {
-      for (int i = 0; i < fields.length; i++) {
-        String[] words = searchString[i].split(" ");
-
-        for (String word : words) {
-          if (ids == null || ids.isEmpty()) {
-            ids.addAll(index.get(word, fields[i]));
-          } else {
-            ids.retainAll(index.get(word, fields[i]));
-          }
-        }
-      }
-
-      for (int id : ids) {
-        Movie movie = read(id);
-        if (movie != null) {
-          movies.add(movie);
-        }
-      }
-    } catch (IOException e) {
-      System.out.println("Erro ao buscar registros por título.");
-      System.out.println(e);
-    }
-
-    return movies;
-  }
-
-  public Movie update(int id, Movie newMovie) {
-    boolean updated = false;
-
-    try {
-      // reads the lastId
+      // reads lastId
       file.seek(0);
       int lastId = file.readInt();
 
       // early return
       if (id > lastId) {
-        return null;
+        return Optional.empty();
       }
 
-      // find register position and lenght
-      long position = -1;
-      int registerLength = -1;
-      boolean found = false;
-      if (index.isAvailabe()) {
-        // if has index availabe, get position from index
-        position = index.get(id);
+      // find register position
+      Optional<RegisterPosition> registerPosition = findRegisterPosition(id);
 
-        if (position != -1) {
-          file.seek(position);
-
-          file.readBoolean(); // skip tombstone (always false)
-          registerLength = file.readInt();
-
-          byte[] byteArrayMovie = new byte[registerLength];
-          file.read(byteArrayMovie);
-
-          found = new Movie(byteArrayMovie).getId() == id;
-        }
-      } else {
-        while (!found && !isEndOfFile()) {
-          // if has no index perform linear search
-          position = file.getFilePointer();
-          boolean tombstone = file.readBoolean();
-          registerLength = file.readInt();
-
-          if (!tombstone) {
-            byte[] byteArrayMovie = new byte[registerLength];
-            file.read(byteArrayMovie);
-
-            found = new Movie(byteArrayMovie).getId() == id;
-          } else {
-            file.skipBytes(registerLength);
-          }
-        }
-      }
-
-      // write new register
-      if (found) {
-        byte[] newByteArrayMovie = newMovie.toByteArray();
-        int newLength = newByteArrayMovie.length;
-
-        // go to register position
-        file.seek(position);
-
-        if (newLength > registerLength) {
-          // set tombstone to true and go to end of file
-          file.writeBoolean(true);
-          long newPosition = file.length();
-          file.seek(newPosition);
-
-          // write new register at end of file
-          file.writeBoolean(false); // tombstone
-          file.writeInt(newByteArrayMovie.length); // registerLength
-          file.write(newByteArrayMovie); // register
-
-          index.update(newMovie, newPosition);
-        } else {
-          file.writeBoolean(false); // tombstone
-          file.writeInt(registerLength); // registerLength
-          file.write(newByteArrayMovie); // register
-        }
-
-        updated = true;
+      if (registerPosition.isPresent()) {
+        return updateRegister(registerPosition.get(), newRegister);
       }
     } catch (IOException e) {
-      System.out.println("Erro ao atualizar registro.");
-      System.out.println(e);
+      System.err.println("Erro ao atualizar registro para ID: " + id);
+      e.printStackTrace();
     }
 
-    return updated ? newMovie : null;
+    return Optional.empty();
   }
 
-  public Movie delete(int id) {
-    Movie movie = null;
-    boolean deleted = false;
+  private Optional<RegisterPosition> findRegisterPosition(int id) throws IOException {
+    long position = -1;
+    int registerLength = -1;
+    boolean found = false;
 
     try {
-      // reads the lastId
+      // if (index.isAvailable()) {
+      // // Se o índice estiver disponível, obtém a posição a partir do índice
+      // position = index.get(id);
+
+      // if (position != -1) {
+      // file.seek(position);
+      // file.readBoolean(); // skip tombstone (always false)
+      // registerLength = file.readInt();
+
+      // byte[] byteArrayRegister = new byte[registerLength];
+      // file.read(byteArrayRegister);
+
+      // T register = constructor.newInstance();
+      // register.fromByteArray(byteArrayRegister);
+      // found = register.getId() == id;
+      // }
+      // } else {
+      // Se não houver índice, realiza busca sequencial
+      while (!found && !isEndOfFile()) {
+        position = file.getFilePointer();
+        boolean tombstone = file.readBoolean();
+        registerLength = file.readInt();
+
+        if (!tombstone) {
+          byte[] byteArrayRegister = new byte[registerLength];
+          file.read(byteArrayRegister);
+
+          T register = constructor.newInstance();
+          register.fromByteArray(byteArrayRegister);
+          found = register.getId() == id;
+        } else {
+          file.skipBytes(registerLength);
+        }
+      }
+      // }
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      System.out.println("Erro ao buscar registro.");
+      e.printStackTrace();
+    }
+
+    return found ? Optional.of(new RegisterPosition(position, registerLength)) : Optional.empty();
+  }
+
+  private Optional<T> updateRegister(RegisterPosition registerPosition, T newRegister) throws IOException {
+    long position = registerPosition.getPosition();
+    int registerLength = registerPosition.getLength();
+
+    byte[] newByteArrayRegister = newRegister.toByteArray();
+    int newLength = newByteArrayRegister.length;
+
+    // Vai para a posição do registro
+    file.seek(position);
+
+    if (newLength > registerLength) {
+      // set tombstone to true and go to the end of file
+      file.writeBoolean(true);
+      long newPosition = file.length();
+      file.seek(newPosition);
+
+      // write new register at the end of file
+      file.writeBoolean(false); // tombstone
+      file.writeInt(newByteArrayRegister.length); // newRegisterLength
+      file.write(newByteArrayRegister); // register
+
+      // updates index
+      // if (index.isAvailable()) {
+      // index.update(newRegister, newPosition);
+      // }
+    } else {
+      file.writeBoolean(false); // tombstone
+      file.writeInt(registerLength); // registerLength
+      file.write(newByteArrayRegister); // register
+    }
+
+    return Optional.of(newRegister);
+  }
+
+  public Optional<T> delete(int id) {
+    try {
+      // Lê o último ID
       file.seek(0);
       int lastId = file.readInt();
 
-      // early return
+      // Retorno antecipado se o ID for maior que o último ID
       if (id > lastId) {
-        return null;
+        return Optional.empty();
       }
 
-      if (index.isAvailabe()) {
-        // if has index availabe, get position from index
-        long position = index.get(id);
+      // Encontra a posição do registro
+      Optional<RegisterPosition> registerPosition = findRegisterPosition(id);
 
-        if (position != -1) {
-          file.seek(position);
-
-          file.readBoolean(); // skip tombstone (always false)
-          int registerLength = file.readInt();
-
-          byte[] byteArrayMovie = new byte[registerLength];
-          file.read(byteArrayMovie);
-
-          movie = new Movie(byteArrayMovie);
-
-          if (movie.getId() == id) {
-            file.seek(position);
-            file.writeBoolean(true);
-
-            index.remove(movie);
-
-            deleted = true;
-          }
-        }
-      } else {
-        // if has no index perform linear search
-        while (!deleted && !isEndOfFile()) {
-          long position = file.getFilePointer();
-          boolean tombstone = file.readBoolean();
-          int registerLength = file.readInt();
-
-          if (!tombstone) {
-            byte[] byteArrayMovie = new byte[registerLength];
-            file.read(byteArrayMovie);
-
-            movie = new Movie(byteArrayMovie);
-
-            if (movie.getId() == id) {
-              file.seek(position);
-              file.writeBoolean(true);
-
-              deleted = true;
-            }
-          } else {
-            file.skipBytes(registerLength);
-          }
-        }
+      if (registerPosition.isPresent()) {
+        return deleteRegister(registerPosition.get());
       }
     } catch (IOException e) {
+      System.err.println("Erro ao excluir registro para ID: " + id);
+      e.printStackTrace();
+    }
+
+    return Optional.empty();
+  }
+
+  private Optional<T> deleteRegister(RegisterPosition registerPosition) throws IOException {
+    try {
+      long position = registerPosition.getPosition();
+
+      // Vai para a posição do registro
+      file.seek(position);
+      file.writeBoolean(true); // Marca o registro como excluído
+
+      // Lê o registro excluído
+      int registerLength = file.readInt();
+      byte[] byteArrayRegister = new byte[registerLength];
+      file.read(byteArrayRegister);
+
+      T register = constructor.newInstance();
+      register.fromByteArray(byteArrayRegister);
+
+      // Remove do índice, se disponível
+      // if (index.isAvailable()) {
+      //   index.remove(register);
+      // }
+
+      return Optional.of(register);
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       System.out.println("Erro ao excluir registro.");
-      System.out.println(e);
+      e.printStackTrace();
     }
 
-    return deleted ? movie : null;
+    return Optional.empty();
   }
 
-  public boolean sortRegisters() {
-    try {
-      Sort sort = new Sort(this);
-      int segments;
+  // public boolean sortRegisters() {
+  //   try {
+  //     Sort sort = new Sort(this);
+  //     int segments;
 
-      do {
-        segments = sort.distribution();
+  //     do {
+  //       segments = sort.distribution();
 
-        sort.intercalation();
-      } while (segments > sortPathsNumber); // if a path is completed sorted, the next intercalation will result one sorted segment
+  //       sort.intercalation();
+  //     } while (segments > sortPathsNumber); // if a path is completed sorted, the next intercalation will result one
+  //                                           // sorted segment
 
-      index.rebuild();
+  //     index.rebuild();
 
-      return true;
-    } catch (IOException e) {
-      System.out.println("Erro ao ordenar registros.");
-      return false;
-    }
-  }
+  //     return true;
+  //   } catch (IOException e) {
+  //     System.out.println("Erro ao ordenar registros.");
+  //     return false;
+  //   }
+  // }
 
   public boolean isEndOfFile() throws IOException {
     return !(file.getFilePointer() < file.length());
@@ -436,6 +394,6 @@ public class Database {
     file.setLength(0);
     file.writeInt(lastId);
 
-    index.clear();
+    //index.clear();
   }
 }

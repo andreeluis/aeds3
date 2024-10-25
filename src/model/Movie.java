@@ -9,8 +9,7 @@ import java.util.Date;
 
 import util.ParseUtil;
 
-public class Movie implements Comparable<Movie> {
-  private int id;
+public class Movie extends Register {
   private String title;
   private String movieInfo;
   private int year;
@@ -24,16 +23,6 @@ public class Movie implements Comparable<Movie> {
   private String[] genre;
   private String runningTime;
   private String license;
-  private static int lastId = -1;
-
-  // id
-  public int getId() {
-    return id;
-  }
-
-  public void setId(int id) {
-    this.id = id;
-  }
 
   // title
   public String getTitle() {
@@ -301,40 +290,31 @@ public class Movie implements Comparable<Movie> {
     this.license = new String(licenseArray);
   }
 
-  // lastId
-  public static int getLastId() {
-    return lastId;
-  }
-
-  public static void setLastId(int lastId) {
-    Movie.lastId = lastId;
-  }
-
   // constructors
   public Movie() {
-    this.setId(-1);
+    super(-1);
   }
 
-  public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre, String runningTime, String license) {
-    this(); // construtor sem parametro
+  // public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre, String runningTime, String license) {
+  //   super(-1);
 
-    this.setTitle(title);
-    this.setMovieInfo(movieInfo);
-    this.setYear(year);
-    this.setDistributor(distributor);
-    this.setBudget(budget);
-    this.setDomesticOpening(domesticOpening);
-    this.setDomesticSales(domesticSales);
-    this.setInternationalSales(internationalSales);
-    this.setWorldWideSales(worldWideSales);
-    this.setReleaseDate(releaseDate);
-    this.setGenre(genre);
-    this.setRunningTime(runningTime);
-    this.setLicense(license);
-  }
+  //   this.setTitle(title);
+  //   this.setMovieInfo(movieInfo);
+  //   this.setYear(year);
+  //   this.setDistributor(distributor);
+  //   this.setBudget(budget);
+  //   this.setDomesticOpening(domesticOpening);
+  //   this.setDomesticSales(domesticSales);
+  //   this.setInternationalSales(internationalSales);
+  //   this.setWorldWideSales(worldWideSales);
+  //   this.setReleaseDate(releaseDate);
+  //   this.setGenre(genre);
+  //   this.setRunningTime(runningTime);
+  //   this.setLicense(license);
+  // }
 
   public Movie(String line) {
-    this(); // construtor sem parametro
+    super(-1);
 
     String[] fields = ParseUtil.parseCSVLine(line);
     // fields[0] -> id (não utilizado)
@@ -354,24 +334,46 @@ public class Movie implements Comparable<Movie> {
     this.setLicense(fields[13]);
   }
 
-  public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre,      String runningTime, String license) {
-    this.setId(id);
-    this.setTitle(title);
-    this.setMovieInfo(movieInfo);
-    this.setYear(year);
-    this.setDistributor(distributor);
-    this.setBudget(budget);
-    this.setDomesticOpening(domesticOpening);
-    this.setDomesticSales(domesticSales);
-    this.setInternationalSales(internationalSales);
-    this.setWorldWideSales(worldWideSales);
-    this.setReleaseDate(releaseDate);
-    this.setGenre(genre);
-    this.setRunningTime(runningTime);
-    this.setLicense(license);
+  // public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre,      String runningTime, String license) {
+  //   super(id);
+
+  //   this.setTitle(title);
+  //   this.setMovieInfo(movieInfo);
+  //   this.setYear(year);
+  //   this.setDistributor(distributor);
+  //   this.setBudget(budget);
+  //   this.setDomesticOpening(domesticOpening);
+  //   this.setDomesticSales(domesticSales);
+  //   this.setInternationalSales(internationalSales);
+  //   this.setWorldWideSales(worldWideSales);
+  //   this.setReleaseDate(releaseDate);
+  //   this.setGenre(genre);
+  //   this.setRunningTime(runningTime);
+  //   this.setLicense(license);
+  // }
+
+  @Override
+  public void fromCSVLine(String csvLine) {
+    String[] fields = ParseUtil.parseCSVLine(csvLine);
+    // fields[0] -> id (não utilizado)
+
+    this.setTitle(fields[1]);
+    this.setMovieInfo(fields[2]);
+    this.setYear(ParseUtil.parseInt(fields[3]));
+    this.setDistributor(fields[4]);
+    this.setBudget(ParseUtil.parseInt(fields[5]));
+    this.setDomesticOpening(ParseUtil.parseInt(fields[6]));
+    this.setDomesticSales(ParseUtil.parseInt(fields[7]));
+    this.setInternationalSales(ParseUtil.parseInt(fields[8]));
+    this.setWorldWideSales(ParseUtil.parseInt(fields[9]));
+    this.setReleaseDate(ParseUtil.parseLong(fields[10]));
+    this.setGenre(fields[11]);
+    this.setRunningTime(fields[12]);
+    this.setLicense(fields[13]);
   }
 
-  public Movie(byte[] byteArray) throws IOException {
+  @Override
+  public void fromByteArray(byte[] byteArray) throws IOException {
     ByteArrayInputStream input = new ByteArrayInputStream(byteArray);
     DataInputStream data = new DataInputStream(input);
 
@@ -396,19 +398,6 @@ public class Movie implements Comparable<Movie> {
   }
 
   @Override
-  public int compareTo(Movie other) {
-    return this.getId() - other.getId();
-  }
-
-  @Override
-  public String toString() {
-    return "[" + this.getId() + "]"
-        + " " + this.getTitle()
-        + ": " + this.getMovieInfo()
-        + " (" + this.getYear() + ")"
-        + " " + this.getGenreString();
-  }
-
   public byte[] toByteArray() throws IOException {
     ByteArrayOutputStream output = new ByteArrayOutputStream();
     DataOutputStream data = new DataOutputStream(output);
@@ -429,5 +418,18 @@ public class Movie implements Comparable<Movie> {
     data.write(this.getLicenseByteArray());
 
     return output.toByteArray();
+  }
+
+  @Override
+  public String toString() {
+    return "[" + this.getId() + "]"
+        + " " + this.getTitle()
+        + ": " + this.getMovieInfo()
+        + " (" + this.getYear() + ")"
+        + " " + this.getGenreString();
+  }
+
+  public String getEntityName() {
+    return "Filme";
   }
 }
