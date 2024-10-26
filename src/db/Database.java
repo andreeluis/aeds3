@@ -20,8 +20,6 @@ import model.RegisterPosition;
 public class Database<T extends Register> {
   private String filePath;
   private RandomAccessFile file;
-  //private int sortPathsNumber;
-  //private int sortInMemoryRegisters;
   // private Index index;
 
   private Constructor<T> constructor;
@@ -44,28 +42,6 @@ public class Database<T extends Register> {
   public RandomAccessFile getFile() {
     return this.file;
   }
-
-  // public int getSortPathsNumber() {
-  //   return sortPathsNumber;
-  // }
-
-  // // sortPathsNumber
-  // public void setSortPathsNumber(int sortPathsNumber) {
-  //   if (sortPathsNumber > 0) {
-  //     this.sortPathsNumber = sortPathsNumber;
-  //   }
-  // }
-
-  // // sortInMemoryRegisters
-  // public int getSortInMemoryRegisters() {
-  //   return sortInMemoryRegisters;
-  // }
-
-  // public void setSortInMemoryRegisters(int sortInMemoryRegisters) {
-  //   if (sortInMemoryRegisters > 0) {
-  //     this.sortInMemoryRegisters = sortInMemoryRegisters;
-  //   }
-  // }
 
   // constructor
   // public Database(String filePath, List<IIndex> indexes, Constructor<T> constructor) throws FileNotFoundException {
@@ -354,46 +330,11 @@ public class Database<T extends Register> {
     return Optional.empty();
   }
 
-  // public boolean sortRegisters() {
-  //   try {
-  //     Sort sort = new Sort(this);
-  //     int segments;
-
-  //     do {
-  //       segments = sort.distribution();
-
-  //       sort.intercalation();
-  //     } while (segments > sortPathsNumber); // if a path is completed sorted, the next intercalation will result one
-  //                                           // sorted segment
-
-  //     index.rebuild();
-
-  //     return true;
-  //   } catch (IOException e) {
-  //     System.out.println("Erro ao ordenar registros.");
-  //     return false;
-  //   }
-  // }
-
   public boolean isEndOfFile() throws IOException {
     return !(file.getFilePointer() < file.length());
   }
 
   public boolean isEmpty() throws IOException {
     return file.length() <= Integer.BYTES;
-  }
-
-  /**
-   * Clean registers and keep lastId
-   */
-  public void cleanRegisters() throws IOException {
-    // reads the lastId
-    file.seek(0);
-    int lastId = file.readInt();
-
-    file.setLength(0);
-    file.writeInt(lastId);
-
-    //index.clear();
   }
 }

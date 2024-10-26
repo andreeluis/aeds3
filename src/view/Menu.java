@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
-import controller.DatabaseControler;
+import db.DatabaseControler;
 import model.Register;
 import model.interfaces.IMenuFactory;
+import util.ParseUtil;
 
 public class Menu<T extends Register> {
   private static Scanner scanner = new Scanner(System.in);
@@ -88,6 +89,7 @@ public class Menu<T extends Register> {
     path = path.isBlank() ? "../dataset/movies.csv" : path;
 
     dbControler.readFromCSV(path);
+    System.out.println("Registros carregados com sucesso!");
   }
 
   private void createRegister() {
@@ -108,23 +110,23 @@ public class Menu<T extends Register> {
         scanner.nextLine(); // Limpa o buffer
 
         dbControler.searchById(id)
-          .ifPresent(registers::add);
+            .ifPresent(registers::add);
 
         break;
       case 2:
         System.out.print("Qual o título do(a) " + entityName.toLowerCase() + "? ");
         title = scanner.nextLine();
 
-        dbControler.searchByFields(new String[]{"title"}, new String[]{title})
-          .forEach(opt -> opt.ifPresent(registers::add));
+        dbControler.searchByFields(new String[] { "title" }, new String[] { title })
+            .forEach(opt -> opt.ifPresent(registers::add));
 
         break;
       case 3:
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[]{"description"}, new String[]{description})
-          .forEach(opt -> opt.ifPresent(registers::add));
+        dbControler.searchByFields(new String[] { "description" }, new String[] { description })
+            .forEach(opt -> opt.ifPresent(registers::add));
 
         break;
       case 4:
@@ -134,8 +136,8 @@ public class Menu<T extends Register> {
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[]{"title", "description"}, new String[]{title, description})
-          .forEach(opt -> opt.ifPresent(registers::add));
+        dbControler.searchByFields(new String[] { "title", "description" }, new String[] { title, description })
+            .forEach(opt -> opt.ifPresent(registers::add));
 
         break;
       default:
@@ -148,7 +150,7 @@ public class Menu<T extends Register> {
         System.out.println(register);
       }
     } else {
-      System.out.println("Nenhum(a)" + entityName.toLowerCase() + " foi encontrado(a).");
+      System.out.println("Nenhum(a) " + entityName.toLowerCase() + " foi encontrado(a).");
     }
   }
 
@@ -165,7 +167,7 @@ public class Menu<T extends Register> {
       T newRegister = menuFactory.editRegister(scanner, register.get());
       dbControler.updateRegister(id, newRegister);
 
-      System.out.println(entityName+ " " + newRegister + " atualizado(a) com sucesso!");
+      System.out.println(entityName + " " + newRegister + " atualizado(a) com sucesso!");
     } else {
       System.out.println(entityName + " não encontrado(a) para alteração.");
     }
@@ -186,18 +188,17 @@ public class Menu<T extends Register> {
   }
 
   private void sortRegisters() {
-    // System.out.print("Quantos caminhos (arquivos temporários) para a ordenação?
-    // ");
-    // database.setSortPathsNumber(ParseUtil.parseInt(sc.nextLine()));
+    System.out.print("Quantos caminhos (arquivos temporários) para a ordenação?");
+    int pathsNumber = ParseUtil.parseInt(scanner.nextLine());
 
-    // System.out.print("Quantos registros em memória primária para a ordenação? ");
-    // database.setSortInMemoryRegisters(ParseUtil.parseInt(sc.nextLine()));
+    System.out.print("Quantos registros em memória primária para a ordenação? ");
+    int inMemoryRegisters = ParseUtil.parseInt(scanner.nextLine());
 
-    // if (database.sortRegisters()) {
-    // System.out.println("Registros ordenados com sucesso!");
-    // } else {
-    // System.out.println("Os registros não foram ordenados.");
-    // }
+    if (dbControler.sort(pathsNumber, inMemoryRegisters)) {
+      System.out.println("Registros ordenados com sucesso!");
+    } else {
+      System.out.println("Os registros não foram ordenados.");
+    }
   }
 
   private void index() {

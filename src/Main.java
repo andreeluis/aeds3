@@ -1,5 +1,6 @@
-import controller.DatabaseControler;
-import db.Database;
+import java.io.FileNotFoundException;
+
+import db.DatabaseControler;
 import model.Movie;
 import model.MovieMenuFactory;
 import view.Menu;
@@ -7,11 +8,19 @@ import view.Menu;
 public class Main {
   private static String dbPath = "./db/";
 
-  public static void main(String[] args) throws Exception {
-    Database<Movie> movieDB = new Database<Movie>(dbPath, Movie.class.getConstructor());
-    
-    DatabaseControler<Movie> movieDBControler = new DatabaseControler<Movie>(movieDB, Movie.class.getConstructor());
+  public static void main(String[] args) {
+    DatabaseControler<Movie> movieDBControler;
+    try {
+      movieDBControler = new DatabaseControler<>(dbPath, Movie.class.getConstructor());
 
-    new Menu<Movie>(movieDBControler, new MovieMenuFactory());
+      new Menu<Movie>(movieDBControler, new MovieMenuFactory());
+
+    } catch (FileNotFoundException e) {
+      System.out.println("Erro ao criar ao criar o arquivo de banco de dados.");
+      e.printStackTrace();
+    } catch (NoSuchMethodException | SecurityException e) {
+      System.out.println("Erro ao usar o construtor da classe.");
+      e.printStackTrace();
+    }
   }
 }

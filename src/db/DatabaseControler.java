@@ -1,10 +1,11 @@
-package controller;
+package db;
 
+import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Optional;
 
-import db.Database;
+import db.sort.Sort;
 import model.Register;
 import util.CSVReader;
 
@@ -12,12 +13,15 @@ public class DatabaseControler<T extends Register> {
   private Constructor<T> constructor;
   private Database<T> database;
   private CSVReader<T> csvReader;
+  private Sort<T> sort;
+  //private Index<T> index;
 
-  public DatabaseControler(Database<T> database, Constructor<T> constructor) {
-    this.database = database;
+  public DatabaseControler(String filePath, Constructor<T> constructor) throws FileNotFoundException {
+    this.database = new Database<>(filePath, constructor);
     this.constructor = constructor;
 
     this.csvReader = new CSVReader<T>();
+    this.sort = new Sort<T>(database, constructor);
   }
 
   public void readFromCSV(String csvPath) {
@@ -47,5 +51,13 @@ public class DatabaseControler<T extends Register> {
 
   public Optional<T> deleteRegister(int id) {
     return this.database.delete(id);
+  }
+
+  public boolean sort(int pathsNumber, int inMemoryRegisters) {
+    boolean sorted = this.sort.sort(pathsNumber, inMemoryRegisters);
+
+    // index.rebuild();
+
+    return sorted;
   }
 }
