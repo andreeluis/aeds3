@@ -295,63 +295,6 @@ public class Movie extends Register {
     super(-1);
   }
 
-  // public Movie(String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre, String runningTime, String license) {
-  //   super(-1);
-
-  //   this.setTitle(title);
-  //   this.setMovieInfo(movieInfo);
-  //   this.setYear(year);
-  //   this.setDistributor(distributor);
-  //   this.setBudget(budget);
-  //   this.setDomesticOpening(domesticOpening);
-  //   this.setDomesticSales(domesticSales);
-  //   this.setInternationalSales(internationalSales);
-  //   this.setWorldWideSales(worldWideSales);
-  //   this.setReleaseDate(releaseDate);
-  //   this.setGenre(genre);
-  //   this.setRunningTime(runningTime);
-  //   this.setLicense(license);
-  // }
-
-  public Movie(String line) {
-    super(-1);
-
-    String[] fields = ParseUtil.parseCSVLine(line);
-    // fields[0] -> id (não utilizado)
-
-    this.setTitle(fields[1]);
-    this.setMovieInfo(fields[2]);
-    this.setYear(ParseUtil.parseInt(fields[3]));
-    this.setDistributor(fields[4]);
-    this.setBudget(ParseUtil.parseInt(fields[5]));
-    this.setDomesticOpening(ParseUtil.parseInt(fields[6]));
-    this.setDomesticSales(ParseUtil.parseInt(fields[7]));
-    this.setInternationalSales(ParseUtil.parseInt(fields[8]));
-    this.setWorldWideSales(ParseUtil.parseInt(fields[9]));
-    this.setReleaseDate(ParseUtil.parseLong(fields[10]));
-    this.setGenre(fields[11]);
-    this.setRunningTime(fields[12]);
-    this.setLicense(fields[13]);
-  }
-
-  // public Movie(int id, String title, String movieInfo, int year, String distributor, int budget, int domesticOpening, int domesticSales, int internationalSales, int worldWideSales, Date releaseDate, String[] genre,      String runningTime, String license) {
-  //   super(id);
-
-  //   this.setTitle(title);
-  //   this.setMovieInfo(movieInfo);
-  //   this.setYear(year);
-  //   this.setDistributor(distributor);
-  //   this.setBudget(budget);
-  //   this.setDomesticOpening(domesticOpening);
-  //   this.setDomesticSales(domesticSales);
-  //   this.setInternationalSales(internationalSales);
-  //   this.setWorldWideSales(worldWideSales);
-  //   this.setReleaseDate(releaseDate);
-  //   this.setGenre(genre);
-  //   this.setRunningTime(runningTime);
-  //   this.setLicense(license);
-  // }
-
   @Override
   public void fromCSVLine(String csvLine) {
     String[] fields = ParseUtil.parseCSVLine(csvLine);

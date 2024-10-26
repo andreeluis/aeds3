@@ -1,6 +1,6 @@
 import java.io.FileNotFoundException;
 
-import db.DatabaseControler;
+import db.DatabaseController;
 import model.Movie;
 import model.MovieMenuFactory;
 import view.Menu;
@@ -9,9 +9,9 @@ public class Main {
   private static String dbPath = "./db/";
 
   public static void main(String[] args) {
-    DatabaseControler<Movie> movieDBControler;
+    DatabaseController<Movie> movieDBControler;
     try {
-      movieDBControler = new DatabaseControler<>(dbPath, Movie.class.getConstructor());
+      movieDBControler = new DatabaseController<>(dbPath, Movie.class.getConstructor());
 
       new Menu<Movie>(movieDBControler, new MovieMenuFactory());
 

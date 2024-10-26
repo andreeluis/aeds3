@@ -2,10 +2,10 @@ package model;
 
 import java.util.Scanner;
 
-import model.interfaces.IMenuFactory;
+import model.interfaces.MenuFactory;
 import util.ParseUtil;
 
-public class MovieMenuFactory implements IMenuFactory<Movie> {
+public class MovieMenuFactory implements MenuFactory<Movie> {
   @Override
   public String getEntityName() {
     return "Filme";

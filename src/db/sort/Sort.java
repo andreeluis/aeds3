@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.ArrayList;
@@ -12,6 +11,7 @@ import java.util.ArrayList;
 import db.Database;
 import model.Register;
 import util.RAF;
+import util.RegisterUtil;
 
 public class Sort<T extends Register> {
   private int pathsNumber = 3; // default pathsNumber
@@ -106,35 +106,9 @@ public class Sort<T extends Register> {
     tempFiles = null;
   }
 
-  private Optional<T> readNextRegister(RandomAccessFile file) throws IOException {
-    try {
-      while (!RAF.isEOF(file)) {
-        boolean tombstone = file.readBoolean();
-        int registerLength = file.readInt();
-
-        if (!tombstone) {
-          // read register
-          byte[] byteArrayRegister = new byte[registerLength];
-          file.read(byteArrayRegister);
-
-          T register = constructor.newInstance();
-          register.fromByteArray(byteArrayRegister);
-
-          return Optional.of(register);
-        } else {
-          file.skipBytes(registerLength);
-        }
-      }
-    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-      e.printStackTrace();
-    }
-
-    return Optional.empty();
-  }
-
   private void fillHeap(RandomAccessFile file) throws IOException {
     while (heap.size() < inMemoryRegisters && !RAF.isEOF(databaseFile)) {
-      Optional<T> register = readNextRegister(file);
+      Optional<T> register = RegisterUtil.getNextValidRegister(file, constructor);
 
       if (register.isPresent()) {
         heap.add(new HeapNode<T>(register.get(), 0));
@@ -177,7 +151,7 @@ public class Sort<T extends Register> {
       tempFiles[currentFile].write(byteArrayRegister); // register
 
       // if has more register, add to heap
-      Optional<T> newRegister = readNextRegister(databaseFile);
+      Optional<T> newRegister = RegisterUtil.getNextValidRegister(databaseFile, constructor);
       if (newRegister.isPresent()) {
         int newSegment;
 
@@ -212,7 +186,7 @@ public class Sort<T extends Register> {
 
     while (!finished) {
       for (int i = 0; i < pathsNumber; i++) {
-        Optional<T> register = readNextRegister(tempFiles[i]);
+        Optional<T> register = RegisterUtil.getNextValidRegister(tempFiles[i], constructor);
 
         if (register.isPresent()) {
           registers.set(i, register.get());

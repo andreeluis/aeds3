@@ -5,18 +5,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
-import db.DatabaseControler;
+import db.DatabaseController;
 import model.Register;
-import model.interfaces.IMenuFactory;
+import model.interfaces.MenuFactory;
 import util.ParseUtil;
 
 public class Menu<T extends Register> {
   private static Scanner scanner = new Scanner(System.in);
-  private DatabaseControler<T> dbControler;
-  private IMenuFactory<T> menuFactory;
+  private DatabaseController<T> dbControler;
+  private MenuFactory<T> menuFactory;
   private String entityName;
 
-  public Menu(DatabaseControler<T> dbControler, IMenuFactory<T> menuFactory) {
+  public Menu(DatabaseController<T> dbControler, MenuFactory<T> menuFactory) {
     this.dbControler = dbControler;
     this.menuFactory = menuFactory;
     this.entityName = menuFactory.getEntityName();
