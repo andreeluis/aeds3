@@ -15,6 +15,11 @@ public class WordUtil {
       "nonetheless", "besides", "themselves", "whose", "anymore", "hence", "notwithstanding", "therefore", "whereas",
       "furthermore", "moreover", "whereupon", "nevertheless", "regardless", "whoever");
 
+  /**
+   * Check if a word is valid
+   * @param word to be checked
+   * @return true if the word is valid, false otherwise
+   */
   public static boolean isWordValid(String word) {
     return word != null && word.length() > 4 && !invalidWords.contains(word);
   }

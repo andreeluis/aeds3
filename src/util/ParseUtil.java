@@ -5,6 +5,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ParseUtil {
+  /**
+   * Parse a CSV line into an array of strings.
+   * @param line the CSV line
+   * @return an array of strings
+   */
   public static String[] parseCSVLine(String line) {
     String[] fields = new String[16];
 
@@ -31,6 +36,11 @@ public class ParseUtil {
     return fields;
   }
 
+  /**
+   * Parse a string into an integer.
+   * @param value the string to parse
+   * @return the integer value or -1 if the string is not a valid integer.
+   */
   public static int parseInt(String value) {
     try {
       return Integer.parseInt(value.replace(",", "").trim());
@@ -39,6 +49,11 @@ public class ParseUtil {
     }
   }
 
+  /**
+   * Parse a string into a long.
+   * @param value the string to parse
+   * @return the long value or -1 if the string is not a valid long.
+   */
   public static long parseLong(String value) {
     SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yy");
 
