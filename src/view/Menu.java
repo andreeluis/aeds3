@@ -5,18 +5,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
-import db.DatabaseController;
+import controller.AppController;
 import model.Register;
 import model.interfaces.MenuFactory;
 import util.ParseUtil;
 
 public class Menu<T extends Register> {
   private static Scanner scanner = new Scanner(System.in);
-  private DatabaseController<T> dbControler;
+  private AppController<T> dbControler;
   private MenuFactory<T> menuFactory;
   private String entityName;
 
-  public Menu(DatabaseController<T> dbControler, MenuFactory<T> menuFactory) {
+  public Menu(AppController<T> dbControler, MenuFactory<T> menuFactory) {
     this.dbControler = dbControler;
     this.menuFactory = menuFactory;
     this.entityName = menuFactory.getEntityName();
@@ -109,24 +109,21 @@ public class Menu<T extends Register> {
         int id = scanner.nextInt();
         scanner.nextLine(); // Limpa o buffer
 
-        dbControler.searchById(id)
-            .ifPresent(registers::add);
+        dbControler.searchById(id).ifPresent(registers::add);
 
         break;
       case 2:
         System.out.print("Qual o título do(a) " + entityName.toLowerCase() + "? ");
         title = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "title" }, new String[] { title })
-            .forEach(opt -> opt.ifPresent(registers::add));
+        dbControler.searchByFields(new String[] { "Title" }, new String[] { title }).ifPresent(registers::addAll);
 
         break;
       case 3:
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "description" }, new String[] { description })
-            .forEach(opt -> opt.ifPresent(registers::add));
+        dbControler.searchByFields(new String[] { "Description" }, new String[] { description }).ifPresent(registers::addAll);
 
         break;
       case 4:
@@ -136,8 +133,7 @@ public class Menu<T extends Register> {
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "title", "description" }, new String[] { title, description })
-            .forEach(opt -> opt.ifPresent(registers::add));
+        dbControler.searchByFields(new String[] { "title", "description" }, new String[] { title, description }).ifPresent(registers::addAll);
 
         break;
       default:

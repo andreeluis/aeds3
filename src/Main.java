@@ -1,26 +1,27 @@
-import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
-import db.DatabaseController;
+import controller.AppController;
+import db.index.bplustree.BPlusTree;
+import db.index.hash.ExtendedHash;
+import db.index.inverted.InvertedIndex;
 import model.Movie;
 import model.MovieMenuFactory;
+import model.interfaces.BaseIndexStrategy;
 import view.Menu;
 
 public class Main {
   private static String dbPath = "./db/";
 
-  public static void main(String[] args) {
-    DatabaseController<Movie> movieDBControler;
-    try {
-      movieDBControler = new DatabaseController<>(dbPath, Movie.class.getConstructor());
+  public static void main(String[] args) throws Exception {
+    List<BaseIndexStrategy<Movie>> indexes = new ArrayList<>();
+    indexes.add(new BPlusTree<Movie>(10, dbPath));
+    indexes.add(new ExtendedHash<>(10, dbPath));
+    indexes.add(new InvertedIndex<Movie>(dbPath, "Title", Movie::getTitle));
+    //indexes.add(new InvertedIndex<Movie>(dbPath, "Description", Movie::getMovieInfo));
 
-      new Menu<Movie>(movieDBControler, new MovieMenuFactory());
+    AppController<Movie> movieControler = new AppController<>(dbPath, Movie.class.getConstructor(), indexes);
 
-    } catch (FileNotFoundException e) {
-      System.out.println("Erro ao criar ao criar o arquivo de banco de dados.");
-      e.printStackTrace();
-    } catch (NoSuchMethodException | SecurityException e) {
-      System.out.println("Erro ao usar o construtor da classe.");
-      e.printStackTrace();
-    }
+    new Menu<Movie>(movieControler, new MovieMenuFactory());
   }
 }

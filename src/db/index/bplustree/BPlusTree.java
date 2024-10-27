@@ -1,13 +1,14 @@
-package index.bplustree;
+package db.index.bplustree;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
 import db.Database;
-import model.interfaces.IIndexStrategy;
+import model.Register;
+import model.interfaces.IndexStrategy;
 
-public class BPlusTree implements IIndexStrategy {
+public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 	private int order;
 	private String filePath;
 	private RandomAccessFile file;
@@ -201,12 +202,14 @@ public class BPlusTree implements IIndexStrategy {
 	}
 
 	@Override
-	public void add(int id, long position) throws IOException {
-		BPlusRegister register = new BPlusRegister(id, position);
+	public void add(T register, long position) throws IOException {
+		int id = register.getId();
+
+		BPlusRegister bPlusregister = new BPlusRegister(id, position);
 
 		long pagina = this.getRoot();
 
-		this.auxRegister = register.clone();
+		this.auxRegister = bPlusregister.clone();
 		this.auxPagePosition = -1;
 		this.pageGrew = false;
 
@@ -389,9 +392,11 @@ public class BPlusTree implements IIndexStrategy {
 	}
 
 	@Override
-	public void remove(int id) throws IOException {
-		BPlusRegister register = new BPlusRegister(id, 0);
-		delete(register);
+	public void remove(T register) throws IOException {
+		int id = register.getId();
+
+		BPlusRegister bPlusregister = new BPlusRegister(id, 0);
+		delete(bPlusregister);
 	}
 
 	// Remoção elementos na árvore. A remoção é recursiva. A primeira
@@ -669,5 +674,10 @@ public class BPlusTree implements IIndexStrategy {
 		this.file.read(buffer);
 
 		return new BPlusPage(buffer, this.order);
+	}
+
+	@Override
+	public String getName() {
+		return "Árvore B+";
 	}
 }

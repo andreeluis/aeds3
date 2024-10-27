@@ -1,4 +1,4 @@
-package index.extendedHash;
+package db.index.hash;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;

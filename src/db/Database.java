@@ -4,11 +4,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
 import model.Register;
-import model.RegisterPosition;
+import util.RAF;
+import util.RegisterUtil;
 
 /**
  * The database file is a sequential file with the following structure:
@@ -20,7 +20,6 @@ import model.RegisterPosition;
 public class Database<T extends Register> {
   private String filePath;
   private RandomAccessFile file;
-  // private Index index;
 
   private Constructor<T> constructor;
 
@@ -44,7 +43,6 @@ public class Database<T extends Register> {
   }
 
   // constructor
-  // public Database(String filePath, List<IIndex> indexes, Constructor<T> constructor) throws FileNotFoundException {
   public Database(String filePath, Constructor<T> constructor) throws FileNotFoundException {
     setFilePath(filePath);
     this.constructor = constructor;
@@ -61,16 +59,14 @@ public class Database<T extends Register> {
       System.out.println("Erro ao criar o arquivo de banco de dados.");
       System.out.println(e);
     }
-
-    // try {
-    // this.index = new Index(this, indexes);
-    // } catch (IOException e) {
-    // System.out.println("Erro ao criar o índice.");
-    // System.out.println(e);
-    // }
   }
 
-  public void insert(T register) {
+  /**
+   * Inserts a new register in the database.
+   * @param register
+   * @return the position of the inserted register or -1 if the register was not inserted.
+   */
+  public long insert(T register) {
     try {
       // reads the lastId and assigns it to the new register
       file.seek(0);
@@ -91,16 +87,20 @@ public class Database<T extends Register> {
       file.writeInt(byteArrayRegister.length); // registerLength
       file.write(byteArrayRegister); // register
 
-      // TODO - add to indexes
-      // if (index.isAvailable()) {
-      // index.add(register, position);
-      // }
+      return position;
     } catch (IOException e) {
       System.out.println("Erro ao escrever novo registro.");
       System.out.println(e);
+
+      return -1;
     }
   }
 
+  /**
+   * Selects a register by its ID.
+   * @param id
+   * @return the register or an empty optional if the register was not found.
+   */
   public Optional<T> select(int id) {
     try {
       // reads lastId
@@ -112,61 +112,52 @@ public class Database<T extends Register> {
         return Optional.empty();
       }
 
-      // if (index.isAvailable()) {
-      // long position = index.get(id);
-
-      // if (position != -1) {
-      // T register = constructor.newInstance();
-
-      // file.seek(position);
-      // file.readBoolean(); // skip tombstone (always false)
-      // int registerLength = file.readInt();
-
-      // byte[] byteArrayRegister = new byte[registerLength];
-      // file.read(byteArrayRegister);
-
-      // register.fromByteArray(byteArrayRegister);
-      // return Optional.of(register);
-      // }
-      // } else {
       boolean found = false;
 
-      while (!found && !isEndOfFile()) {
-        boolean tombstone = file.readBoolean();
-        int registerLength = file.readInt();
+      while (!found && !RAF.isEOF(file)) {
+        Optional<T> register = RegisterUtil.getNextValidRegister(file, constructor);
 
-        if (!tombstone) {
-          byte[] byteArrayRegister = new byte[registerLength];
-          file.read(byteArrayRegister);
-          T register = constructor.newInstance();
-          register.fromByteArray(byteArrayRegister);
-
-          if (register.getId() == id) {
-            found = true;
-            return Optional.of(register);
-          }
-        } else {
-          file.skipBytes(registerLength);
+        if (register.isPresent() && register.get().getId() == id) {
+          found = true;
+          return Optional.of(register.get());
         }
       }
-      // }
     } catch (IOException e) {
       System.out.println("Erro ao buscar registro.");
       System.out.println(e);
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-      System.out.println("Erro ao buscar registro usando índice.");
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * Selects a register by its position.
+   * @param position
+   * @return the register or an empty optional if the register was not found.
+   */
+  public Optional<T> select(long position) {
+    try {
+      file.seek(position);
+
+      Optional<T> register = RegisterUtil.getNextRegister(file, constructor);
+
+      if (register.isPresent()) {
+        return register;
+      }
+    } catch (IOException e) {
+      System.out.println("Erro ao buscar registro.");
       e.printStackTrace();
     }
 
     return Optional.empty();
   }
 
-  // public Optional<List<T>> select() {
-  // List<T> registers = new ArrayList<>();
-
-  // return Optional.of(registers);
-  // }
-
+  /**
+   * Update a register by its ID.
+   * @param id the ID of the register to be updated.
+   * @param newRegister the new register to be written in the position.
+   * @return
+   */
   public Optional<T> update(int id, T newRegister) {
     try {
       // reads lastId
@@ -179,102 +170,98 @@ public class Database<T extends Register> {
       }
 
       // find register position
-      Optional<RegisterPosition> registerPosition = findRegisterPosition(id);
+      Optional<Long> registerPosition = getRegisterPosition(id);
 
-      if (registerPosition.isPresent()) {
-        return updateRegister(registerPosition.get(), newRegister);
+      if (registerPosition.isPresent() && update(registerPosition.get(), newRegister).isPresent()) {
+        return Optional.of(newRegister);
       }
     } catch (IOException e) {
-      System.err.println("Erro ao atualizar registro para ID: " + id);
+      System.err.println("Erro ao atualizar registro de ID: " + id);
       e.printStackTrace();
     }
 
     return Optional.empty();
   }
 
-  private Optional<RegisterPosition> findRegisterPosition(int id) throws IOException {
+  /**
+   * Find the position of a register by its ID.
+   * @param id the ID of the register to be found.
+   * @return the position of the register's tombstone or an empty optional if the register was not found.
+   */
+  private Optional<Long> getRegisterPosition(int id) {
     long position = -1;
-    int registerLength = -1;
     boolean found = false;
 
     try {
-      // if (index.isAvailable()) {
-      // // Se o índice estiver disponível, obtém a posição a partir do índice
-      // position = index.get(id);
-
-      // if (position != -1) {
-      // file.seek(position);
-      // file.readBoolean(); // skip tombstone (always false)
-      // registerLength = file.readInt();
-
-      // byte[] byteArrayRegister = new byte[registerLength];
-      // file.read(byteArrayRegister);
-
-      // T register = constructor.newInstance();
-      // register.fromByteArray(byteArrayRegister);
-      // found = register.getId() == id;
-      // }
-      // } else {
-      // Se não houver índice, realiza busca sequencial
-      while (!found && !isEndOfFile()) {
+      while (!found && !RAF.isEOF(file)) {
         position = file.getFilePointer();
-        boolean tombstone = file.readBoolean();
-        registerLength = file.readInt();
 
-        if (!tombstone) {
-          byte[] byteArrayRegister = new byte[registerLength];
-          file.read(byteArrayRegister);
+        Optional<T> register = RegisterUtil.getNextRegister(file, constructor);
 
-          T register = constructor.newInstance();
-          register.fromByteArray(byteArrayRegister);
-          found = register.getId() == id;
-        } else {
-          file.skipBytes(registerLength);
+        if (register.isPresent() && register.get().getId() == id) {
+          found = true;
         }
       }
-      // }
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-      System.out.println("Erro ao buscar registro.");
+    } catch (IOException e) {
+      System.out.println("Erro ao buscar a posição do registro.");
       e.printStackTrace();
     }
 
-    return found ? Optional.of(new RegisterPosition(position, registerLength)) : Optional.empty();
+    return found ? Optional.of(position) : Optional.empty();
   }
 
-  private Optional<T> updateRegister(RegisterPosition registerPosition, T newRegister) throws IOException {
-    long position = registerPosition.getPosition();
-    int registerLength = registerPosition.getLength();
+  /**
+   * Update a register by its position in the file.
+   * @param registerPosition the position of the register to be updated.
+   * @param newRegister the new register to be written in the position.
+   * @return the position of the updated register or an empty optional if the register was not updated.
+   */
+  public Optional<Long> update(long registerPosition, T newRegister) {
+    try {
+      byte[] newByteArrayRegister = newRegister.toByteArray();
+      int newRegisterLength = newByteArrayRegister.length;
+      long position = registerPosition;
 
-    byte[] newByteArrayRegister = newRegister.toByteArray();
-    int newLength = newByteArrayRegister.length;
+      // Vai para a posição do registro
+      file.seek(position);
+      file.readBoolean(); // tombstone
+      int registerLength = file.readInt(); // registerLength
 
-    // Vai para a posição do registro
-    file.seek(position);
+      if (newRegisterLength > registerLength) {
+        // set tombstone to true and go to the end of file
+        file.seek(position);
+        file.writeBoolean(true);
 
-    if (newLength > registerLength) {
-      // set tombstone to true and go to the end of file
-      file.writeBoolean(true);
-      long newPosition = file.length();
-      file.seek(newPosition);
+        long newPosition = file.length();
+        file.seek(newPosition);
 
-      // write new register at the end of file
-      file.writeBoolean(false); // tombstone
-      file.writeInt(newByteArrayRegister.length); // newRegisterLength
-      file.write(newByteArrayRegister); // register
+        // write new register at the end of file
+        file.writeBoolean(false); // tombstone
+        file.writeInt(newByteArrayRegister.length); // newRegisterLength
+        file.write(newByteArrayRegister); // register
 
-      // updates index
-      // if (index.isAvailable()) {
-      // index.update(newRegister, newPosition);
-      // }
-    } else {
-      file.writeBoolean(false); // tombstone
-      file.writeInt(registerLength); // registerLength
-      file.write(newByteArrayRegister); // register
+        return Optional.of(newPosition);
+      } else {
+        file.seek(position);
+        file.writeBoolean(false); // tombstone
+        file.writeInt(registerLength); // registerLength
+        file.write(newByteArrayRegister); // register
+
+        return Optional.of(position);
+      }
+    } catch (IOException e) {
+      System.out.println("Erro ao atualizar registro.");
+      e.printStackTrace();
+
+      return Optional.empty();
     }
-
-    return Optional.of(newRegister);
   }
 
+  /**
+   * Delete a register by its ID.
+   * @param id the ID of the register to be deleted.
+   * @return the deleted register or an empty optional if the register was not deleted.
+   */
   public Optional<T> delete(int id) {
     try {
       // Lê o último ID
@@ -287,10 +274,10 @@ public class Database<T extends Register> {
       }
 
       // Encontra a posição do registro
-      Optional<RegisterPosition> registerPosition = findRegisterPosition(id);
+      Optional<Long> registerPosition = getRegisterPosition(id);
 
       if (registerPosition.isPresent()) {
-        return deleteRegister(registerPosition.get());
+        return delete(registerPosition.get());
       }
     } catch (IOException e) {
       System.err.println("Erro ao excluir registro para ID: " + id);
@@ -300,41 +287,28 @@ public class Database<T extends Register> {
     return Optional.empty();
   }
 
-  private Optional<T> deleteRegister(RegisterPosition registerPosition) throws IOException {
+  /**
+   * Delete a register by its position in the file.
+   * @param registerPosition the position of the register to be deleted.
+   * @return the deleted register or an empty optional if the register was not deleted.
+   */
+  public Optional<T> delete(long registerPosition) {
     try {
-      long position = registerPosition.getPosition();
+      file.seek(registerPosition);
 
-      // Vai para a posição do registro
-      file.seek(position);
-      file.writeBoolean(true); // Marca o registro como excluído
+      Optional<T> register = RegisterUtil.getNextRegister(file, constructor);
 
-      // Lê o registro excluído
-      int registerLength = file.readInt();
-      byte[] byteArrayRegister = new byte[registerLength];
-      file.read(byteArrayRegister);
+      if (register.isPresent()) {
+        file.seek(registerPosition);
+        file.writeBoolean(true); // Marca o registro como excluído
 
-      T register = constructor.newInstance();
-      register.fromByteArray(byteArrayRegister);
-
-      // Remove do índice, se disponível
-      // if (index.isAvailable()) {
-      //   index.remove(register);
-      // }
-
-      return Optional.of(register);
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        return register;
+      }
+    } catch (IOException e) {
       System.out.println("Erro ao excluir registro.");
       e.printStackTrace();
     }
 
     return Optional.empty();
-  }
-
-  public boolean isEndOfFile() throws IOException {
-    return !(file.getFilePointer() < file.length());
-  }
-
-  public boolean isEmpty() throws IOException {
-    return file.length() <= Integer.BYTES;
   }
 }
