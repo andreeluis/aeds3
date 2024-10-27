@@ -1,4 +1,4 @@
-package index.bplustree;
+package db.index.bplustree;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

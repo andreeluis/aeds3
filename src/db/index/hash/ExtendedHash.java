@@ -1,12 +1,13 @@
-package index.extendedHash;
+package db.index.hash;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import db.Database;
-import model.interfaces.IIndexStrategy;
+import model.Register;
+import model.interfaces.IndexStrategy;
 
-public class ExtendedHash implements IIndexStrategy {
+public class ExtendedHash<T extends Register> implements IndexStrategy<T> {
   private String filePath;
   private int bucketSize;
   private int globalDepth;
@@ -99,7 +100,9 @@ public class ExtendedHash implements IIndexStrategy {
   }
 
   @Override
-  public void add(int id, long position) throws IOException {
+  public void add(T register, long position) throws IOException {
+    int id = register.getId();
+
     int bucketIndex = hash(id);
     long bucketAddress = directory.getBucketAddress(bucketIndex);
 
@@ -140,7 +143,9 @@ public class ExtendedHash implements IIndexStrategy {
   }
 
   @Override
-  public void remove(int id) throws IOException {
+  public void remove(T register) throws IOException {
+    int id = register.getId();
+
     int bucketIndex = hash(id);
     long bucketAddress = directory.getBucketAddress(bucketIndex);
     bucket.removeFromBucket(bucketAddress, id);
@@ -151,17 +156,20 @@ public class ExtendedHash implements IIndexStrategy {
     directory.clear();
     bucket.clear();
 
-    
-    if (directory.isEmpty()) {
-      setGlobalDepth(1);
-      directory.initializeDirectory(globalDepth);
-      bucket.initializeBuckets();
-    } else {
-      this.setGlobalDepth(directory.readGlobalDepth());
-    }
+    setGlobalDepth(1);
+    directory.initializeDirectory(globalDepth);
+    bucket.initializeBuckets();
+
+    this.setGlobalDepth(directory.readGlobalDepth());
+
   }
 
   private int hash(int id) {
     return id & ((1 << globalDepth) - 1);
+  }
+
+  @Override
+  public String getName() {
+    return "Hashing Extensível";
   }
 }

@@ -1,38 +1,27 @@
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
-import db.Database;
-import index.InvertedList.InvertedList;
-import index.extendedHash.ExtendedHash;
+import controller.AppController;
+import db.index.bplustree.BPlusTree;
+import db.index.hash.ExtendedHash;
+import db.index.inverted.InvertedIndex;
 import model.Movie;
-import model.interfaces.IIndex;
+import model.MovieMenuFactory;
+import model.interfaces.BaseIndexStrategy;
 import view.Menu;
 
 public class Main {
   private static String dbPath = "./db/";
-  private static List<IIndex> indexes;
 
-  public static void main(String[] args) {
-    indexes = new ArrayList<IIndex>();
-    try {
-      indexes.add(new ExtendedHash(20, dbPath));
-      // indexes.add(new BPlusTree(3, dbPath));
-      indexes.add(new InvertedList(dbPath, "title", Movie::getTitle));
-      indexes.add(new InvertedList(dbPath, "description", Movie::getMovieInfo));
-      //indexes.add(new InvertedList(dbPath, "description"));
-    } catch (Exception e) {
-      System.out.println("Erro ao criar índices.");
-      System.out.println(e);
-    }
+  public static void main(String[] args) throws Exception {
+    List<BaseIndexStrategy<Movie>> indexes = new ArrayList<>();
+    indexes.add(new BPlusTree<Movie>(10, dbPath));
+    indexes.add(new ExtendedHash<>(10, dbPath));
+    indexes.add(new InvertedIndex<Movie>(dbPath, "Title", Movie::getTitle));
+    //indexes.add(new InvertedIndex<Movie>(dbPath, "Description", Movie::getMovieInfo));
 
-    try {
-      Database database = new Database(dbPath, indexes);
+    AppController<Movie> movieControler = new AppController<>(dbPath, Movie.class.getConstructor(), indexes);
 
-      new Menu(database);
-    } catch (FileNotFoundException e) {
-      System.out.println("Arquivo não encontrado.");
-      System.out.println(e);
-    }
+    new Menu<Movie>(movieControler, new MovieMenuFactory());
   }
 }
