@@ -27,7 +27,7 @@ public class InvertedIndex<T extends Register> implements InvertedIndexStrategy<
 	}
 
 	public String getFilePath(String mode) {
-		return this.filePath + "InvertedList" + getField() + mode + Database.getFileExtension();
+		return this.filePath + "InvertedList" + getField() + mode + Database.getExtension();
 	}
 
 	public void setFilePath(String filePath) {

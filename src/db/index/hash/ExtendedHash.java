@@ -8,168 +8,168 @@ import model.Register;
 import model.interfaces.IndexStrategy;
 
 public class ExtendedHash<T extends Register> implements IndexStrategy<T> {
-  private String filePath;
-  private int bucketSize;
-  private int globalDepth;
-  private DirectoryManager directory;
-  private BucketManager bucket;
+	private String filePath;
+	private int bucketSize;
+	private int globalDepth;
+	private DirectoryManager directory;
+	private BucketManager bucket;
 
-  // filePath
-  public String getFilePath() {
-    return this.filePath;
-  }
+	// filePath
+	public String getFilePath() {
+		return this.filePath;
+	}
 
-  public void setFilePath(String filePath) {
-    this.filePath = filePath;
-  }
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
 
-  // bucketSize
-  public int getBucketSize() {
-    return this.bucketSize;
-  }
+	// bucketSize
+	public int getBucketSize() {
+		return this.bucketSize;
+	}
 
-  public void setBucketSize(int bucketSize) {
-    if (bucketSize >= 1) {
-      this.bucketSize = bucketSize;
-    } else {
-      System.out.println("O tamanho do bucket deve ser maior ou igual a 1.");
-      this.bucketSize = 1;
-    }
-  }
+	public void setBucketSize(int bucketSize) {
+		if (bucketSize >= 1) {
+			this.bucketSize = bucketSize;
+		} else {
+			System.out.println("O tamanho do bucket deve ser maior ou igual a 1.");
+			this.bucketSize = 1;
+		}
+	}
 
-  // globalDepth
-  public int getGlobalDepth() {
-    return this.globalDepth;
-  }
+	// globalDepth
+	public int getGlobalDepth() {
+		return this.globalDepth;
+	}
 
-  public void setGlobalDepth(int globalDepth) {
-    if (globalDepth >= 1) {
-      this.globalDepth = globalDepth;
-    } else {
-      System.out.println("A profundidade global deve ser maior ou igual a 1.");
-      this.globalDepth = 1;
-    }
-  }
+	public void setGlobalDepth(int globalDepth) {
+		if (globalDepth >= 1) {
+			this.globalDepth = globalDepth;
+		} else {
+			System.out.println("A profundidade global deve ser maior ou igual a 1.");
+			this.globalDepth = 1;
+		}
+	}
 
-  // directory
-  public String getDirectoryPath() {
-    return this.getFilePath() + "ExtHashDir" + Database.getFileExtension();
-  }
+	// directory
+	public String getDirectoryPath() {
+		return this.getFilePath() + "ExtHashDir" + Database.getExtension();
+	}
 
-  public void setDirectory(DirectoryManager directory) {
-    this.directory = directory;
-  }
+	public void setDirectory(DirectoryManager directory) {
+		this.directory = directory;
+	}
 
-  private void setDirectory() throws IOException {
-    RandomAccessFile directoryFile = new RandomAccessFile(this.getDirectoryPath(), "rw");
+	private void setDirectory() throws IOException {
+		RandomAccessFile directoryFile = new RandomAccessFile(this.getDirectoryPath(), "rw");
 
-    this.setDirectory(new DirectoryManager(directoryFile, this.getBucketSize()));
-  }
+		this.setDirectory(new DirectoryManager(directoryFile, this.getBucketSize()));
+	}
 
-  // bucket
-  public String getBucketPath() {
-    return this.getFilePath() + "ExtHashBuck" + Database.getFileExtension();
-  }
+	// bucket
+	public String getBucketPath() {
+		return this.getFilePath() + "ExtHashBuck" + Database.getExtension();
+	}
 
-  public void setBucket(BucketManager bucket) {
-    this.bucket = bucket;
-  }
+	public void setBucket(BucketManager bucket) {
+		this.bucket = bucket;
+	}
 
-  private void setBucket() throws IOException {
-    RandomAccessFile bucketFile = new RandomAccessFile(this.getBucketPath(), "rw");
+	private void setBucket() throws IOException {
+		RandomAccessFile bucketFile = new RandomAccessFile(this.getBucketPath(), "rw");
 
-    this.setBucket(new BucketManager(bucketFile, this.getBucketSize()));
-  }
+		this.setBucket(new BucketManager(bucketFile, this.getBucketSize()));
+	}
 
-  // constructor
-  public ExtendedHash(int bucketSize, String filePath) throws IOException {
-    this.setFilePath(filePath);
-    this.setBucketSize(bucketSize);
+	// constructor
+	public ExtendedHash(int bucketSize, String filePath) throws IOException {
+		this.setFilePath(filePath);
+		this.setBucketSize(bucketSize);
 
-    this.setDirectory();
-    this.setBucket();
+		this.setDirectory();
+		this.setBucket();
 
-    if (directory.isEmpty()) {
-      this.setGlobalDepth(1);
+		if (directory.isEmpty()) {
+			this.setGlobalDepth(1);
 
-      directory.initializeDirectory(globalDepth);
-      bucket.initializeBuckets();
-    } else {
-      this.setGlobalDepth(directory.readGlobalDepth());
-    }
-  }
+			directory.initializeDirectory(globalDepth);
+			bucket.initializeBuckets();
+		} else {
+			this.setGlobalDepth(directory.readGlobalDepth());
+		}
+	}
 
-  @Override
-  public void add(T register, long position) throws IOException {
-    int id = register.getId();
+	@Override
+	public void add(T register, long position) throws IOException {
+		int id = register.getId();
 
-    int bucketIndex = hash(id);
-    long bucketAddress = directory.getBucketAddress(bucketIndex);
+		int bucketIndex = hash(id);
+		long bucketAddress = directory.getBucketAddress(bucketIndex);
 
-    if (bucket.isBucketFull(bucketAddress)) {
-      splitBucket(bucketIndex, id, position);
-    } else {
-      bucket.addToBucket(bucketAddress, id, position);
-    }
-  }
+		if (bucket.isBucketFull(bucketAddress)) {
+			splitBucket(bucketIndex, id, position);
+		} else {
+			bucket.addToBucket(bucketAddress, id, position);
+		}
+	}
 
-  private void splitBucket(int bucketIndex, int newId, long newPosition) throws IOException {
-    int localDepth = bucket.getLocalDepth(directory.getBucketAddress(bucketIndex));
+	private void splitBucket(int bucketIndex, int newId, long newPosition) throws IOException {
+		int localDepth = bucket.getLocalDepth(directory.getBucketAddress(bucketIndex));
 
-    if (localDepth == globalDepth) {
-      directory.doubleDirectorySize(globalDepth++);
-    }
+		if (localDepth == globalDepth) {
+			directory.doubleDirectorySize(globalDepth++);
+		}
 
-    long newBucketAddress = bucket.getBucketFile().length();
-    bucket.initializeNewBucket(newBucketAddress, localDepth + 1);
+		long newBucketAddress = bucket.getBucketFile().length();
+		bucket.initializeNewBucket(newBucketAddress, localDepth + 1);
 
-    directory.updateDirectoryAfterSplit(bucketIndex, localDepth, newBucketAddress, globalDepth);
+		directory.updateDirectoryAfterSplit(bucketIndex, localDepth, newBucketAddress, globalDepth);
 
-    redistributeEntries(bucketIndex, localDepth, newId, newPosition);
-  }
+		redistributeEntries(bucketIndex, localDepth, newId, newPosition);
+	}
 
-  private void redistributeEntries(int bucketIndex, int localDepth, int newId, long newPosition) throws IOException {
-    long oldBucketAddress = directory.getBucketAddress(bucketIndex);
-    long newBucketAddress = directory.getBucketAddress(bucketIndex | (1 << localDepth));
+	private void redistributeEntries(int bucketIndex, int localDepth, int newId, long newPosition) throws IOException {
+		long oldBucketAddress = directory.getBucketAddress(bucketIndex);
+		long newBucketAddress = directory.getBucketAddress(bucketIndex | (1 << localDepth));
 
-    bucket.redistributeEntries(oldBucketAddress, newBucketAddress, localDepth, newId, newPosition, this::hash);
-  }
+		bucket.redistributeEntries(oldBucketAddress, newBucketAddress, localDepth, newId, newPosition, this::hash);
+	}
 
-  @Override
-  public long get(int id) throws IOException {
-    int bucketIndex = hash(id);
-    long bucketAddress = directory.getBucketAddress(bucketIndex);
-    return bucket.getFromBucket(bucketAddress, id);
-  }
+	@Override
+	public long get(int id) throws IOException {
+		int bucketIndex = hash(id);
+		long bucketAddress = directory.getBucketAddress(bucketIndex);
+		return bucket.getFromBucket(bucketAddress, id);
+	}
 
-  @Override
-  public void remove(T register) throws IOException {
-    int id = register.getId();
+	@Override
+	public void remove(T register) throws IOException {
+		int id = register.getId();
 
-    int bucketIndex = hash(id);
-    long bucketAddress = directory.getBucketAddress(bucketIndex);
-    bucket.removeFromBucket(bucketAddress, id);
-  }
+		int bucketIndex = hash(id);
+		long bucketAddress = directory.getBucketAddress(bucketIndex);
+		bucket.removeFromBucket(bucketAddress, id);
+	}
 
-  @Override
-  public void clear() throws IOException {
-    directory.clear();
-    bucket.clear();
+	@Override
+	public void clear() throws IOException {
+		directory.clear();
+		bucket.clear();
 
-    setGlobalDepth(1);
-    directory.initializeDirectory(globalDepth);
-    bucket.initializeBuckets();
+		setGlobalDepth(1);
+		directory.initializeDirectory(globalDepth);
+		bucket.initializeBuckets();
 
-    this.setGlobalDepth(directory.readGlobalDepth());
+		this.setGlobalDepth(directory.readGlobalDepth());
 
-  }
+	}
 
-  private int hash(int id) {
-    return id & ((1 << globalDepth) - 1);
-  }
+	private int hash(int id) {
+		return id & ((1 << globalDepth) - 1);
+	}
 
-  @Override
-  public String getName() {
-    return "Hashing Extensível";
-  }
+	@Override
+	public String getName() {
+		return "Hashing Extensível";
+	}
 }

@@ -16,9 +16,9 @@ public class Main {
   public static void main(String[] args) throws Exception {
     List<BaseIndexStrategy<Movie>> indexes = new ArrayList<>();
     indexes.add(new BPlusTree<Movie>(10, dbPath));
-    indexes.add(new ExtendedHash<>(10, dbPath));
+    indexes.add(new ExtendedHash<Movie>(10, dbPath));
     indexes.add(new InvertedIndex<Movie>(dbPath, "Title", Movie::getTitle));
-    //indexes.add(new InvertedIndex<Movie>(dbPath, "Description", Movie::getMovieInfo));
+    // indexes.add(new InvertedIndex<Movie>(dbPath, "Description", Movie::getMovieInfo));
 
     AppController<Movie> movieControler = new AppController<>(dbPath, Movie.class.getConstructor(), indexes);
 
