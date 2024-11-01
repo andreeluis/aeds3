@@ -25,7 +25,7 @@ public class CompressionController {
 	 * Compresses the file at the given path using all available compressions.
 	 *
 	 * @param filePath the path to the file to compress
-	 * @return a list of compression ratios and times for each compression
+	 * @return a list of compression names, ratios and times for each compression or an empty optional if no compressions were successful
 	 */
 	public Optional<List<Map<String, Map<Float, Float>>>> compress(String filePath) {
 		List<Map<String, Map<Float, Float>>> results = new ArrayList<>();
@@ -42,27 +42,24 @@ public class CompressionController {
 	}
 
 	/**
-	 * Decompresses the file at the given path using all available compressions.
+	 * Decompresses the file at the given path using the appropriate decompression based on the file extension.
 	 *
 	 * @param filePath the path to the file to decompress
-	 * @return a list of times for each decompression
+	 * @return a map of decompression name and time
 	 */
-	public Optional<List<Float>> decompress(String filePath) {
-		List<Float> results = new ArrayList<>();
-
+	public Optional<Map<String, Float>> decompress(String filePath) {
 		for (Compression compression : compressions) {
 			String extension = compression.getExtension() + Database.getExtension();
-
 			if (filePath.endsWith(extension)) {
 				Optional<Float> result = decompress(filePath, compression);
 
 				if (result.isPresent()) {
-					results.add(result.get());
+					return Optional.of(Map.of(compression.getName(), result.get()));
 				}
 			}
 		}
 
-		return results.isEmpty() ? Optional.empty() : Optional.of(results);
+		return Optional.empty();
 	}
 
 	private Optional<Map<Float, Float>> compress(String filePath, Compression compression) {
