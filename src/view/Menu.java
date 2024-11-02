@@ -123,7 +123,8 @@ public class Menu<T extends Register> {
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "Description" }, new String[] { description }).ifPresent(registers::addAll);
+        dbControler.searchByFields(new String[] { "Description" }, new String[] { description })
+            .ifPresent(registers::addAll);
 
         break;
       case 4:
@@ -133,7 +134,8 @@ public class Menu<T extends Register> {
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "title", "description" }, new String[] { title, description }).ifPresent(registers::addAll);
+        dbControler.searchByFields(new String[] { "title", "description" }, new String[] { title, description })
+            .ifPresent(registers::addAll);
 
         break;
       default:
