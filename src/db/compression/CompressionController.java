@@ -2,7 +2,7 @@ package db.compression;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,14 +27,14 @@ public class CompressionController {
 	 * @param filePath the path to the file to compress
 	 * @return a list of compression names, ratios and times for each compression or an empty optional if no compressions were successful
 	 */
-	public Optional<List<Map<String, Map<Float, Float>>>> compress(String filePath) {
-		List<Map<String, Map<Float, Float>>> results = new ArrayList<>();
+	public Optional<Map<String, Map<Float, Float>>> compress(String filePath) {
+		Map<String, Map<Float, Float>> results = new HashMap<>();
 
 		for (Compression compression : compressions) {
 			Optional<Map<Float, Float>> result = compress(filePath, compression);
 
 			if (result.isPresent()) {
-				results.add(Map.of(compression.getName(), result.get()));
+				results.put(compression.getName(), result.get());
 			}
 		}
 
@@ -50,6 +50,7 @@ public class CompressionController {
 	public Optional<Map<String, Float>> decompress(String filePath) {
 		for (Compression compression : compressions) {
 			String extension = compression.getExtension() + Database.getExtension();
+			
 			if (filePath.endsWith(extension)) {
 				Optional<Float> result = decompress(filePath, compression);
 
