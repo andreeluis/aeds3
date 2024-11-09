@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import db.compression.huffman.Huffman;
 import model.CompressionStats;
 import model.interfaces.Compression;
 import util.ConfigUtil;
