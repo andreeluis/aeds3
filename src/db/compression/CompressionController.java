@@ -2,11 +2,11 @@ package db.compression;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import model.CompressionStats;
 import model.interfaces.Compression;
 import util.ConfigUtil;
 
@@ -14,7 +14,8 @@ public class CompressionController {
 	private List<Compression> compressions;
 
 	public CompressionController() {
-		compressions = List.of(new LZW(), new Huffman());
+		//compressions = List.of(new LZW(), new Huffman());
+		compressions = List.of(new Huffman());
 	}
 
 	public List<Compression> getCompressions() {
@@ -25,16 +26,16 @@ public class CompressionController {
 	 * Compresses the file at the given path using all available compressions.
 	 *
 	 * @param filePath the path to the file to compress
-	 * @return a list of compression names, ratios and times for each compression or an empty optional if no compressions were successful
+	 * @return a list of CompressionStats objects containing the statistics for each compression or an empty optional if no compressions were successful
 	 */
-	public Optional<Map<String, Map<Float, Float>>> compress(String filePath) {
-		Map<String, Map<Float, Float>> results = new HashMap<>();
+	public Optional<List<CompressionStats>> compress(String filePath) {
+		List<CompressionStats> results = new ArrayList<>();
 
 		for (Compression compression : compressions) {
-			Optional<Map<Float, Float>> result = compress(filePath, compression);
+			Optional<CompressionStats> result = compress(filePath, compression);
 
 			if (result.isPresent()) {
-				results.put(compression.getName(), result.get());
+				results.add(result.get());
 			}
 		}
 
@@ -45,28 +46,28 @@ public class CompressionController {
 	 * Decompresses the file at the given path using the appropriate decompression based on the file extension.
 	 *
 	 * @param filePath the path to the file to decompress
-	 * @return a map of decompression name and time
+	 * @return a CompressionStats object containing the statistics for the decompression or an empty optional if no decompression was successful
 	 */
-	public Optional<Map<String, Float>> decompress(String filePath) {
+	public Optional<CompressionStats> decompress(String filePath) {
 		for (Compression compression : compressions) {
-			String extension = compression.getExtension() + ConfigUtil.FILE_EXTENSION;
+			String extension = compression.getExtension();
 
 			if (filePath.endsWith(extension)) {
-				Optional<Float> result = decompress(filePath, compression);
+				Optional<CompressionStats> result = decompress(filePath, compression);
 
-				if (result.isPresent()) {
-					return Optional.of(Map.of(compression.getName(), result.get()));
-				}
+				return result.isPresent() ? result : Optional.empty();
 			}
 		}
 
 		return Optional.empty();
 	}
 
-	private Optional<Map<Float, Float>> compress(String filePath, Compression compression) {
+	private Optional<CompressionStats> compress(String filePath, Compression compression) {
 		try {
+			String compressedFilePath = filePath.replace(ConfigUtil.FILE_EXTENSION, compression.getExtension());
+
 			RandomAccessFile file = new RandomAccessFile(filePath, "r");
-			RandomAccessFile compressedFile = new RandomAccessFile(filePath + compression.getExtension(), "rw");
+			RandomAccessFile compressedFile = new RandomAccessFile(compressedFilePath, "rw");
 
 			// start timer
 			long startTime = System.nanoTime();
@@ -74,13 +75,14 @@ public class CompressionController {
 			compression.compress(file, compressedFile);
 
 			long endTime = System.nanoTime();
-			float compressionTime = (endTime - startTime) / 1_000_000.0f;
-			float compressionRatio = file.length() / (float) compressedFile.length();
+			long compressionTime = endTime - startTime;
+
+			CompressionStats compressionStats = new CompressionStats(compression.getName(), file.length(), compressedFile.length(), compressionTime);
 
 			file.close();
 			compressedFile.close();
 
-			return Optional.of(Map.of(compressionRatio, compressionTime));
+			return Optional.of(compressionStats);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -88,7 +90,7 @@ public class CompressionController {
 		return Optional.empty();
 	}
 
-	private Optional<Float> decompress(String filePath, Compression compression) {
+	private Optional<CompressionStats> decompress(String filePath, Compression compression) {
 		try {
 			String decompressedFilePath = filePath.replace(compression.getExtension(), ConfigUtil.FILE_EXTENSION);
 
@@ -101,12 +103,14 @@ public class CompressionController {
 			compression.decompress(file, decompressedFile);
 
 			long endTime = System.nanoTime();
-			float decompressionTime = (endTime - startTime) / 1_000_000.0f;
+			long decompressionTime = endTime - startTime;
+
+			CompressionStats compressionStats = new CompressionStats(compression.getName(), decompressionTime);
 
 			file.close();
 			decompressedFile.close();
 
-			return Optional.of(decompressionTime);
+			return Optional.of(compressionStats);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
