@@ -3,8 +3,8 @@ package db.compression;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import db.Database;
 import model.interfaces.Compression;
+import util.ConfigUtil;
 
 public class LZW implements Compression {
 	@Override
@@ -14,7 +14,7 @@ public class LZW implements Compression {
 
 	@Override
 	public String getExtension() {
-		return ".lzw" + Database.getExtension();
+		return ".lzw" + ConfigUtil.FILE_EXTENSION;
 	}
 
 	/**

@@ -3,25 +3,15 @@ package db.index.hash;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import db.Database;
 import model.Register;
 import model.interfaces.IndexStrategy;
+import util.ConfigUtil;
 
 public class ExtendedHash<T extends Register> implements IndexStrategy<T> {
-	private String filePath;
 	private int bucketSize;
 	private int globalDepth;
 	private DirectoryManager directory;
 	private BucketManager bucket;
-
-	// filePath
-	public String getFilePath() {
-		return this.filePath;
-	}
-
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
-	}
 
 	// bucketSize
 	public int getBucketSize() {
@@ -53,7 +43,7 @@ public class ExtendedHash<T extends Register> implements IndexStrategy<T> {
 
 	// directory
 	public String getDirectoryPath() {
-		return this.getFilePath() + "ExtHashDir" + Database.getExtension();
+		return ConfigUtil.DB_PATH + "ExtHashDir" + ConfigUtil.FILE_EXTENSION;
 	}
 
 	public void setDirectory(DirectoryManager directory) {
@@ -68,7 +58,7 @@ public class ExtendedHash<T extends Register> implements IndexStrategy<T> {
 
 	// bucket
 	public String getBucketPath() {
-		return this.getFilePath() + "ExtHashBuck" + Database.getExtension();
+		return ConfigUtil.DB_PATH + "ExtHashBuck" + ConfigUtil.FILE_EXTENSION;
 	}
 
 	public void setBucket(BucketManager bucket) {
@@ -82,8 +72,7 @@ public class ExtendedHash<T extends Register> implements IndexStrategy<T> {
 	}
 
 	// constructor
-	public ExtendedHash(int bucketSize, String filePath) throws IOException {
-		this.setFilePath(filePath);
+	public ExtendedHash(int bucketSize) throws IOException {
 		this.setBucketSize(bucketSize);
 
 		this.setDirectory();

@@ -3,8 +3,8 @@ package db.compression;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import db.Database;
 import model.interfaces.Compression;
+import util.ConfigUtil;
 
 public class Huffman implements Compression {
 	@Override
@@ -12,9 +12,9 @@ public class Huffman implements Compression {
 		return "Huffman";
 	}
 
-	@ Override
+	@Override
 	public String getExtension() {
-		return ".huff" + Database.getExtension();
+		return ".huff" + ConfigUtil.FILE_EXTENSION;
 	}
 
 	/**
@@ -25,7 +25,7 @@ public class Huffman implements Compression {
 	 */
 	@Override
 	public void compress(RandomAccessFile source, RandomAccessFile destination) throws IOException {
-
+		destination.writeBytes("Huffman");
 	}
 
 	/**

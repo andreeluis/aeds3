@@ -10,6 +10,7 @@ import java.util.ArrayList;
 
 import db.Database;
 import model.Register;
+import util.ConfigUtil;
 import util.RAF;
 import util.RegisterUtil;
 
@@ -40,7 +41,7 @@ public class Sort<T extends Register> {
 
 	public Sort(Database<T> database, Constructor<T> constructor) {
 		this.databaseFile = database.getFile();
-		this.filePath = database.getFilePath() + "tmp";
+		this.filePath = ConfigUtil.DB_PATH + "tmp";
 
 		this.constructor = constructor;
 
@@ -71,7 +72,7 @@ public class Sort<T extends Register> {
 		tempFiles = new RandomAccessFile[this.pathsNumber];
 
 		for (int i = 0; i < this.pathsNumber; i++) {
-			String tempFilePath = filePath + (i + 1) + Database.getExtension();
+			String tempFilePath = filePath + (i + 1) + ConfigUtil.FILE_EXTENSION;
 
 			// start and clean files[i]
 			tempFiles[i] = new RandomAccessFile(tempFilePath, "rw");
@@ -95,7 +96,7 @@ public class Sort<T extends Register> {
 
 		// delete files
 		for (int i = 0; i < pathsNumber; i++) {
-			String tempFilePath = filePath + (i + 1) + Database.getExtension();
+			String tempFilePath = filePath + (i + 1) + ConfigUtil.FILE_EXTENSION;
 			File file = new File(tempFilePath);
 
 			if (file.exists()) {

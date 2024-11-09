@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import db.Database;
 import model.interfaces.Compression;
+import util.ConfigUtil;
 
 public class CompressionController {
 	private List<Compression> compressions;
@@ -49,8 +49,8 @@ public class CompressionController {
 	 */
 	public Optional<Map<String, Float>> decompress(String filePath) {
 		for (Compression compression : compressions) {
-			String extension = compression.getExtension() + Database.getExtension();
-			
+			String extension = compression.getExtension() + ConfigUtil.FILE_EXTENSION;
+
 			if (filePath.endsWith(extension)) {
 				Optional<Float> result = decompress(filePath, compression);
 
@@ -90,7 +90,7 @@ public class CompressionController {
 
 	private Optional<Float> decompress(String filePath, Compression compression) {
 		try {
-			String decompressedFilePath = filePath.replace(compression.getExtension(), Database.getExtension());
+			String decompressedFilePath = filePath.replace(compression.getExtension(), ConfigUtil.FILE_EXTENSION);
 
 			RandomAccessFile file = new RandomAccessFile(filePath, "r");
 			RandomAccessFile decompressedFile = new RandomAccessFile(decompressedFilePath, "rw");

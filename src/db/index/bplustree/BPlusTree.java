@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
-import db.Database;
 import model.Register;
 import model.interfaces.IndexStrategy;
+import util.ConfigUtil;
 
 public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 	private int order;
@@ -38,8 +38,8 @@ public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 		return this.filePath;
 	}
 
-	public void setFilePath(String filePath) {
-		this.filePath = filePath + "BPlusTreeIndex" + Database.getExtension();
+	public void setFilePath() {
+		this.filePath = ConfigUtil.DB_PATH + "BPlusTreeIndex" + ConfigUtil.FILE_EXTENSION;
 	}
 
 	// file
@@ -74,9 +74,9 @@ public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 	}
 
 	// constructor
-	public BPlusTree(int order, String filePath) throws Exception {
+	public BPlusTree(int order) throws Exception {
 		this.setOrder(order);
-		this.setFilePath(filePath);
+		this.setFilePath();
 
 		this.setFile();
 	}

@@ -7,6 +7,7 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 import model.Register;
+import util.ConfigUtil;
 import util.RAF;
 import util.RegisterUtil;
 
@@ -18,24 +19,8 @@ import util.RegisterUtil;
  * @param <T> Type of the register
  */
 public class Database<T extends Register> {
-	private String filePath;
 	private RandomAccessFile file;
-
 	private Constructor<T> constructor;
-
-	// fileExtension
-	public static String getExtension() {
-		return ".aeds3";
-	}
-
-	// filePath
-	public String getFilePath() {
-		return filePath;
-	}
-
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
-	}
 
 	// file
 	public RandomAccessFile getFile() {
@@ -43,11 +28,10 @@ public class Database<T extends Register> {
 	}
 
 	// constructor
-	public Database(String filePath, Constructor<T> constructor) throws FileNotFoundException {
-		setFilePath(filePath);
+	public Database(Constructor<T> constructor) throws FileNotFoundException {
 		this.constructor = constructor;
 
-		String dbFilePath = this.filePath + "dados" + getExtension();
+		String dbFilePath = ConfigUtil.DB_PATH + "dados" + ConfigUtil.FILE_EXTENSION;
 		this.file = new RandomAccessFile(dbFilePath, "rw");
 
 		try {

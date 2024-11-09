@@ -19,8 +19,8 @@ public class AppController<T extends Register> {
   private Sort<T> sort;
   private IndexController<T> index;
 
-  public AppController(String filePath, Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
-    this.database = new Database<>(filePath, constructor);
+  public AppController(Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
+    this.database = new Database<>(constructor);
     this.constructor = constructor;
 
     this.csvReader = new CSVReader<T>();
@@ -132,5 +132,5 @@ public class AppController<T extends Register> {
     index.rebuild();
 
     return sorted;
-  }
+	}
 }

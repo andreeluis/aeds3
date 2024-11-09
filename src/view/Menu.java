@@ -8,16 +8,17 @@ import java.util.Scanner;
 import controller.AppController;
 import model.Register;
 import model.interfaces.MenuFactory;
+import util.FileUtil;
 import util.ParseUtil;
 
 public class Menu<T extends Register> {
   private static Scanner scanner = new Scanner(System.in);
-  private AppController<T> dbControler;
+  private AppController<T> controler;
   private MenuFactory<T> menuFactory;
   private String entityName;
 
-  public Menu(AppController<T> dbControler, MenuFactory<T> menuFactory) {
-    this.dbControler = dbControler;
+  public Menu(AppController<T> controler, MenuFactory<T> menuFactory) {
+    this.controler = controler;
     this.menuFactory = menuFactory;
     this.entityName = menuFactory.getEntityName();
 
@@ -73,6 +74,9 @@ public class Menu<T extends Register> {
         case 7:
           index();
           break;
+				case 8:
+					compress();
+					break;
         case 0:
           return;
         default:
@@ -88,13 +92,13 @@ public class Menu<T extends Register> {
     String path = scanner.nextLine();
     path = path.isBlank() ? "../dataset/movies.csv" : path;
 
-    dbControler.readFromCSV(path);
+    controler.readFromCSV(path);
     System.out.println("Registros carregados com sucesso!");
   }
 
   private void createRegister() {
     T register = menuFactory.createRegister(scanner);
-    dbControler.insertRegister(register);
+    controler.insertRegister(register);
   }
 
   private void searchRegister() {
@@ -109,21 +113,21 @@ public class Menu<T extends Register> {
         int id = scanner.nextInt();
         scanner.nextLine(); // Limpa o buffer
 
-        dbControler.searchById(id).ifPresent(registers::add);
+        controler.searchById(id).ifPresent(registers::add);
 
         break;
       case 2:
         System.out.print("Qual o título do(a) " + entityName.toLowerCase() + "? ");
         title = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "Title" }, new String[] { title }).ifPresent(registers::addAll);
+        controler.searchByFields(new String[] { "Title" }, new String[] { title }).ifPresent(registers::addAll);
 
         break;
       case 3:
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "Description" }, new String[] { description }).ifPresent(registers::addAll);
+        controler.searchByFields(new String[] { "Description" }, new String[] { description }).ifPresent(registers::addAll);
 
         break;
       case 4:
@@ -133,7 +137,7 @@ public class Menu<T extends Register> {
         System.out.print("Qual a descrição do(a) " + entityName.toLowerCase() + "? ");
         description = scanner.nextLine();
 
-        dbControler.searchByFields(new String[] { "title", "description" }, new String[] { title, description }).ifPresent(registers::addAll);
+        controler.searchByFields(new String[] { "title", "description" }, new String[] { title, description }).ifPresent(registers::addAll);
 
         break;
       default:
@@ -155,13 +159,13 @@ public class Menu<T extends Register> {
     int id = scanner.nextInt();
     scanner.nextLine(); // Limpa o buffer
 
-    Optional<T> register = dbControler.searchById(id);
+    Optional<T> register = controler.searchById(id);
 
     if (register.isPresent()) {
       System.out.println("Editando " + entityName.toLowerCase() + " " + register.get() + ":");
 
       T newRegister = menuFactory.editRegister(scanner, register.get());
-      dbControler.updateRegister(id, newRegister);
+      controler.updateRegister(id, newRegister);
 
       System.out.println(entityName + " " + newRegister + " atualizado(a) com sucesso!");
     } else {
@@ -174,7 +178,7 @@ public class Menu<T extends Register> {
     int id = scanner.nextInt();
     scanner.nextLine(); // Limpa o buffer
 
-    Optional<T> register = dbControler.deleteRegister(id);
+    Optional<T> register = controler.deleteRegister(id);
 
     if (register.isPresent()) {
       System.out.println(entityName + register.get() + " excluído(a) com sucesso!");
@@ -190,7 +194,7 @@ public class Menu<T extends Register> {
     System.out.print("Quantos registros em memória primária para a ordenação? ");
     int inMemoryRegisters = ParseUtil.parseInt(scanner.nextLine());
 
-    if (dbControler.sort(pathsNumber, inMemoryRegisters)) {
+    if (controler.sort(pathsNumber, inMemoryRegisters)) {
       System.out.println("Registros ordenados com sucesso!");
     } else {
       System.out.println("Os registros não foram ordenados.");
@@ -217,6 +221,30 @@ public class Menu<T extends Register> {
         break;
     }
   }
+
+	private void compress() {
+		// List of all files
+		Optional<List<String>> files = FileUtil.getAllFiles();
+
+		// early return
+		if (files.isEmpty()) {
+			System.out.println("Nenhum arquivo encontrado para compressão.");
+			return;
+		}
+
+		System.out.println("Qual arquivo deseja comprimir?");
+		for (int i = 0; i < files.get().size(); i++) {
+			System.out.println("  " + (i + 1) + " - " + files.get().get(i));
+		}
+
+		System.out.print("Selecione a opção desejada: ");
+		int select = scanner.nextInt();
+		scanner.nextLine(); // Limpa o buffer
+
+		String fileName = files.get().get(select - 1);
+
+		//controler.compress(fileName);
+	}
 
   private static void clearTerminal() {
     System.out.print("\033[H\033[2J");

@@ -9,29 +9,20 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import db.Database;
 import model.Register;
 import model.interfaces.InvertedIndexStrategy;
+import util.ConfigUtil;
 import util.WordUtil;
 
 public class InvertedIndex<T extends Register> implements InvertedIndexStrategy<T> {
-	private String filePath;
 	private RandomAccessFile indexFile;
 	private RandomAccessFile dataFile;
 	private String field;
 	private Function<T, String> indexFunction;
 
 	// filePathName
-	public String getFilePath() {
-		return this.filePath;
-	}
-
 	public String getFilePath(String mode) {
-		return this.filePath + "InvertedList" + getField() + mode + Database.getExtension();
-	}
-
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
+		return ConfigUtil.DB_PATH + "InvertedList" + getField() + mode + ConfigUtil.FILE_EXTENSION;
 	}
 
 	// indexFile
@@ -79,9 +70,8 @@ public class InvertedIndex<T extends Register> implements InvertedIndexStrategy<
 	}
 
 	// constructor
-	public InvertedIndex(String filePath, String field, Function<T, String> indexFunction) throws IOException {
+	public InvertedIndex(String field, Function<T, String> indexFunction) throws IOException {
 		this.setField(field);
-		this.setFilePath(filePath);
 		this.setIndexFunction(indexFunction);
 		this.setIndexFile();
 		this.setDataFile();
