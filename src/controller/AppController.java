@@ -6,10 +6,15 @@ import java.util.List;
 import java.util.Optional;
 
 import db.Database;
+import db.compression.CompressionController;
 import db.index.IndexController;
 import db.sort.Sort;
+import model.CompressionStats;
 import model.Register;
 import model.interfaces.BaseIndexStrategy;
+import model.interfaces.Compression;
+import model.interfaces.IndexStrategy;
+import model.interfaces.InvertedIndexStrategy;
 import util.CSVReader;
 
 public class AppController<T extends Register> {
@@ -18,6 +23,7 @@ public class AppController<T extends Register> {
   private CSVReader<T> csvReader;
   private Sort<T> sort;
   private IndexController<T> index;
+	private CompressionController compression;
 
   public AppController(Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
     this.database = new Database<>(constructor);
@@ -27,6 +33,7 @@ public class AppController<T extends Register> {
     this.sort = new Sort<T>(database, constructor);
 
     this.index = new IndexController<>(indexes, this.database, this.constructor);
+		this.compression = new CompressionController();
   }
 
   public void readFromCSV(String csvPath) {
@@ -126,11 +133,34 @@ public class AppController<T extends Register> {
     }
   }
 
+	// sort
   public boolean sort(int pathsNumber, int inMemoryRegisters) {
     boolean sorted = this.sort.sort(pathsNumber, inMemoryRegisters);
 
     index.rebuild();
 
     return sorted;
+	}
+
+	// index
+	public Optional<List<IndexStrategy<T>>> getAvailableIndexes() {
+		return Optional.of(this.index.getIndexes());
+	}
+
+	public Optional<List<InvertedIndexStrategy<T>>> getAvailableInvertedIndexes() {
+		return Optional.of(this.index.getInvertedIndexes());
+	}
+
+	// compression
+	public Optional<List<CompressionStats>> compressFile(String filePath) {
+		return this.compression.compress(filePath);
+	}
+
+	public Optional<CompressionStats> decompressFile(String filePath) {
+		return this.compression.decompress(filePath);
+	}
+
+	public Optional<List<Compression>> getAvailableCompressions() {
+		return Optional.of(this.compression.getCompressions());
 	}
 }
