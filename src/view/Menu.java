@@ -261,7 +261,7 @@ public class Menu<T extends Register> {
 			System.out.println("Arquivo comprimido com sucesso!");
 			System.out.println("Estatísticas da compressão:");
 			for (CompressionStats stat : stats.get()) {
-				System.out.println("  " + stat);
+				System.out.println("  - " + stat);
 			}
 		} else {
 			System.out.println("Erro ao comprimir o arquivo.");
@@ -306,7 +306,7 @@ public class Menu<T extends Register> {
 		if (stats.isPresent()) {
 			System.out.println("Arquivo descomprimido com sucesso!");
 			System.out.println("Estatísticas da descompressão:");
-			System.out.println("  " + stats.get());
+			System.out.println("  - " + stats.get());
 		} else {
 			System.out.println("Erro ao descomprimir o arquivo.");
 		}
