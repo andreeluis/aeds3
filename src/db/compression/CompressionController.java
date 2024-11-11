@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 import db.compression.huffman.Huffman;
+import db.compression.lzw.LZW;
 import model.CompressionStats;
 import model.interfaces.Compression;
 import util.ConfigUtil;
@@ -15,8 +16,7 @@ public class CompressionController {
 	private List<Compression> compressions;
 
 	public CompressionController() {
-		//compressions = List.of(new LZW(), new Huffman());
-		compressions = List.of(new Huffman());
+		compressions = List.of(new Huffman(), new LZW());
 	}
 
 	public List<Compression> getCompressions() {
@@ -85,6 +85,7 @@ public class CompressionController {
 
 			return Optional.of(compressionStats);
 		} catch (IOException e) {
+			System.out.println(compression.getName() + " compression failed.");
 			e.printStackTrace();
 		}
 
@@ -113,6 +114,7 @@ public class CompressionController {
 
 			return Optional.of(compressionStats);
 		} catch (IOException e) {
+			System.out.println(compression.getName() + " decompression failed.");
 			e.printStackTrace();
 		}
 
