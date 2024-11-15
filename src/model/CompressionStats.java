@@ -82,7 +82,7 @@ public class CompressionStats {
 		if (type == CompressionType.COMPRESS) {
 			return String.format("%s: %.2f%% de taxa de compressão, %.2f segundos", name, getCompressionRatio() * 100, timeTaken / 1_000_000_000.0f);
 		} else {
-			return String.format("%s: %.2f segundos", name, timeTaken / 1000.0);
+			return String.format("%s: %.2f segundos", name, timeTaken / 1_000_000_000.0f);
 		}
 	}
 }

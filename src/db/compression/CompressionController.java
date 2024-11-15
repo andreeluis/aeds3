@@ -19,8 +19,14 @@ public class CompressionController {
 		compressions = List.of(new Huffman(), new LZW());
 	}
 
-	public List<Compression> getCompressions() {
-		return compressions;
+	public Optional<List<String>> getSupportedExtensions() {
+		List<String> extensions = new ArrayList<>();
+
+		for (Compression compression : compressions) {
+			extensions.add(compression.getExtension());
+		}
+
+		return extensions.isEmpty() ? Optional.empty() : Optional.of(extensions);
 	}
 
 	/**
