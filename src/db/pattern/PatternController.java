@@ -4,13 +4,14 @@ import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.Optional;
 
+import db.pattern.KMP.KMP;
 import model.interfaces.PatternMatching;
 
 public class PatternController {
 	List<PatternMatching> patternMatchings;
 
 	public PatternController() {
-		patternMatchings = List.of(); // TODO: Add all pattern matching algorithms
+		patternMatchings = List.of(new KMP()); // TODO: Add all pattern matching algorithms
 	}
 
 	/**
