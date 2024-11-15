@@ -4,12 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 import controller.AppController;
 import model.CompressionStats;
 import model.Register;
-import model.interfaces.Compression;
 import model.interfaces.MenuFactory;
 import util.ConfigUtil;
 import util.FileUtil;
@@ -269,19 +267,17 @@ public class Menu<T extends Register> {
 	}
 
 	private void decompress() {
-		// File Extensions
-		Optional<List<Compression>> compressions = controler.getAvailableCompressions();
+		// List of all supported extensions to decompress
+		Optional<List<String>> supportedExtensions = controler.getSupportedExtensions();
 
 		// early return
-		if (compressions.isEmpty()) {
+		if (supportedExtensions.isEmpty()) {
 			System.out.println("Nenhum algoritmo de descompressão disponível.");
 			return;
 		}
 
 		// List of all files
-		Optional<List<String>> files = FileUtil.getAllFiles(
-			compressions.get().stream().map(Compression::getExtension).collect(Collectors.toList())
-		);
+		Optional<List<String>> files = FileUtil.getAllFiles(supportedExtensions.get());
 
 		// early return
 		if (files.isEmpty()) {

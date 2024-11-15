@@ -1,5 +1,6 @@
 package db.pattern;
 
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +10,15 @@ import model.interfaces.PatternMatching;
 
 public class PatternController {
 	List<PatternMatching> patternMatchings;
+	PatternMatching inUsePattern;
+
+	public List<PatternMatching> getPatternMatchings() {
+		return patternMatchings;
+	}
+
+	public void setPatternMatching(int index) {
+		inUsePattern = patternMatchings.get(index);
+	}
 
 	public PatternController() {
 		patternMatchings = List.of(new KMP()); // TODO: Add all pattern matching algorithms
@@ -22,16 +32,14 @@ public class PatternController {
 	 * @return a list of the positions of the pattern in the file
 	 */
 	public Optional<List<Long>> search(RandomAccessFile file, String pattern) {
-		List<Long> results = null;
+		Optional<List<Long>> result = Optional.empty();
 
-		for (PatternMatching patternMatching : patternMatchings) {
-			Optional<List<Long>> result = patternMatching.search(file, pattern.getBytes());
-
-			if (result.isPresent()) {
-				results = result.get();
-			}
+		try {
+			result = inUsePattern.search(file, pattern.getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
-		return results == null ? Optional.empty() : Optional.of(results);
+		return result;
 	}
 }

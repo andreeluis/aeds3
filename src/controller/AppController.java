@@ -12,7 +12,6 @@ import db.sort.Sort;
 import model.CompressionStats;
 import model.Register;
 import model.interfaces.BaseIndexStrategy;
-import model.interfaces.Compression;
 import model.interfaces.IndexStrategy;
 import model.interfaces.InvertedIndexStrategy;
 import util.CSVReader;
@@ -160,7 +159,7 @@ public class AppController<T extends Register> {
 		return this.compression.decompress(filePath);
 	}
 
-	public Optional<List<Compression>> getAvailableCompressions() {
-		return Optional.of(this.compression.getCompressions());
+	public Optional<List<String>> getSupportedExtensions() {
+		return this.compression.getSupportedExtensions();
 	}
 }
