@@ -40,6 +40,7 @@ public class Menu<T extends Register> {
 		System.out.println("  7 - Configurar índices");
 		System.out.println("  8 - Comprimir arquivo");
 		System.out.println("  9 - Descomprimir arquivo");
+		System.out.println("  10 - Buscar padrão");
 
 		System.out.println("  0 - Sair");
 
@@ -83,6 +84,9 @@ public class Menu<T extends Register> {
 					break;
 				case 9:
 					decompress();
+					break;
+				case 10:
+					searchPattern();
 					break;
 				case 0:
 					return;
@@ -305,6 +309,23 @@ public class Menu<T extends Register> {
 			System.out.println("  - " + stats.get());
 		} else {
 			System.out.println("Erro ao descomprimir o arquivo.");
+		}
+	}
+
+	private void searchPattern() {
+		System.out.print("Qual o padrão de busca? ");
+		String pattern = scanner.nextLine();
+
+		Optional<List<T>> registers = controler.searchPattern(pattern);
+
+		if (registers.isPresent()) {
+			System.out.println(entityName + "s encontrados(as):");
+			
+			for (T register : registers.get()) {
+				System.out.println(register);
+			}
+		} else {
+			System.out.println("Nenhum(a) " + entityName.toLowerCase() + " foi encontrado(a).");
 		}
 	}
 

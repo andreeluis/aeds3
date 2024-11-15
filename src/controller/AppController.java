@@ -8,6 +8,7 @@ import java.util.Optional;
 import db.Database;
 import db.compression.CompressionController;
 import db.index.IndexController;
+import db.pattern.PatternController;
 import db.sort.Sort;
 import model.CompressionStats;
 import model.Register;
@@ -15,6 +16,7 @@ import model.interfaces.BaseIndexStrategy;
 import model.interfaces.IndexStrategy;
 import model.interfaces.InvertedIndexStrategy;
 import util.CSVReader;
+import util.RegisterUtil;
 
 public class AppController<T extends Register> {
   private Constructor<T> constructor;
@@ -23,6 +25,7 @@ public class AppController<T extends Register> {
   private Sort<T> sort;
   private IndexController<T> index;
 	private CompressionController compression;
+	private PatternController pattern;
 
   public AppController(Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
     this.database = new Database<>(constructor);
@@ -33,6 +36,7 @@ public class AppController<T extends Register> {
 
     this.index = new IndexController<>(indexes, this.database, this.constructor);
 		this.compression = new CompressionController();
+		this.pattern = new PatternController();
   }
 
   public void readFromCSV(String csvPath) {
@@ -161,5 +165,30 @@ public class AppController<T extends Register> {
 
 	public Optional<List<String>> getSupportedExtensions() {
 		return this.compression.getSupportedExtensions();
+	}
+
+	/**
+	 * Search for a pattern and return the registers that match the pattern.
+	 */
+	public Optional<List<T>> searchPattern(String pattern) {
+		Optional<List<Long>> positions = this.pattern.search(this.database.getFile(), pattern);
+
+		if (positions.isPresent()) {
+			List<T> registers = new ArrayList<>();
+
+			for (long position : positions.get()) {
+				Optional<T> register = RegisterUtil.getRegister(position, this.database.getFile(), this.constructor);
+
+				register.ifPresent(r -> {
+					if (registers.stream().noneMatch(existingRegister -> existingRegister.getId() == r.getId())) {
+						registers.add(r);
+					}
+				});
+			}
+
+			return Optional.of(registers);
+		}
+
+		return Optional.empty();
 	}
 }
