@@ -6,11 +6,17 @@ import java.util.List;
 import java.util.Optional;
 
 import db.Database;
+import db.compression.CompressionController;
 import db.index.IndexController;
+import db.pattern.PatternController;
 import db.sort.Sort;
+import model.CompressionStats;
 import model.Register;
 import model.interfaces.BaseIndexStrategy;
+import model.interfaces.IndexStrategy;
+import model.interfaces.InvertedIndexStrategy;
 import util.CSVReader;
+import util.RegisterUtil;
 
 public class AppController<T extends Register> {
   private Constructor<T> constructor;
@@ -18,15 +24,19 @@ public class AppController<T extends Register> {
   private CSVReader<T> csvReader;
   private Sort<T> sort;
   private IndexController<T> index;
+	private CompressionController compression;
+	private PatternController pattern;
 
-  public AppController(String filePath, Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
-    this.database = new Database<>(filePath, constructor);
+  public AppController(Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
+    this.database = new Database<>(constructor);
     this.constructor = constructor;
 
     this.csvReader = new CSVReader<T>();
     this.sort = new Sort<T>(database, constructor);
 
     this.index = new IndexController<>(indexes, this.database, this.constructor);
+		this.compression = new CompressionController();
+		this.pattern = new PatternController();
   }
 
   public void readFromCSV(String csvPath) {
@@ -126,11 +136,59 @@ public class AppController<T extends Register> {
     }
   }
 
+	// sort
   public boolean sort(int pathsNumber, int inMemoryRegisters) {
     boolean sorted = this.sort.sort(pathsNumber, inMemoryRegisters);
 
     index.rebuild();
 
     return sorted;
-  }
+	}
+
+	// index
+	public Optional<List<IndexStrategy<T>>> getAvailableIndexes() {
+		return Optional.of(this.index.getIndexes());
+	}
+
+	public Optional<List<InvertedIndexStrategy<T>>> getAvailableInvertedIndexes() {
+		return Optional.of(this.index.getInvertedIndexes());
+	}
+
+	// compression
+	public Optional<List<CompressionStats>> compressFile(String filePath) {
+		return this.compression.compress(filePath);
+	}
+
+	public Optional<CompressionStats> decompressFile(String filePath) {
+		return this.compression.decompress(filePath);
+	}
+
+	public Optional<List<String>> getSupportedExtensions() {
+		return this.compression.getSupportedExtensions();
+	}
+
+	/**
+	 * Search for a pattern and return the registers that match the pattern.
+	 */
+	public Optional<List<T>> searchPattern(String pattern) {
+		Optional<List<Long>> positions = this.pattern.search(this.database.getFile(), pattern);
+
+		if (positions.isPresent()) {
+			List<T> registers = new ArrayList<>();
+
+			for (long position : positions.get()) {
+				Optional<T> register = RegisterUtil.getRegister(position, this.database.getFile(), this.constructor);
+
+				register.ifPresent(r -> {
+					if (registers.stream().noneMatch(existingRegister -> existingRegister.getId() == r.getId())) {
+						registers.add(r);
+					}
+				});
+			}
+
+			return Optional.of(registers);
+		}
+
+		return Optional.empty();
+	}
 }

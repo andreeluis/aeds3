@@ -31,7 +31,7 @@ public class Main extends Application {
     // indexes.add(new InvertedIndex<Movie>(dbPath, "Description",
     // Movie::getMovieInfo));
 
-    AppController<Movie> movieControler = new AppController<>(dbPath, Movie.class.getConstructor(), indexes);
+    AppController<Movie> movieControler = new AppController<>(Movie.class.getConstructor(), indexes);
     MovieMenuFactory movieMenuFactory = new MovieMenuFactory();
 
     GUIController<Movie> controller = new GUIController<Movie>(movieControler, movieMenuFactory.getEntityName());

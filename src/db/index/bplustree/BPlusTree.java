@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
-import db.Database;
 import model.Register;
 import model.interfaces.IndexStrategy;
+import util.ConfigUtil;
 
 public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 	private int order;
@@ -20,47 +20,47 @@ public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 	private boolean pageShrunk;
 
 	// order
-  public int getOrder() {
-    return this.order;
-  }
+	public int getOrder() {
+		return this.order;
+	}
 
-  public void setOrder(int order) {
-    if (order >= 3) {
-      this.order = order;
-    } else {
-      System.out.println("A ordem precisa ser no minimo 3!");
-      this.order = 3;
-    }
-  }
+	public void setOrder(int order) {
+		if (order >= 3) {
+			this.order = order;
+		} else {
+			System.out.println("A ordem precisa ser no minimo 3!");
+			this.order = 3;
+		}
+	}
 
 	// filePathName
-  public String getFilePath() {
-    return this.filePath;
-  }
+	public String getFilePath() {
+		return this.filePath;
+	}
 
-  public void setFilePath(String filePath) {
-    this.filePath = filePath + "BPlusTreeIndex" + Database.getFileExtension();
-  }
+	public void setFilePath() {
+		this.filePath = ConfigUtil.DB_PATH + "BPlusTreeIndex" + ConfigUtil.FILE_EXTENSION;
+	}
 
 	// file
-  public RandomAccessFile getFile() {
-    return this.file;
-  }
+	public RandomAccessFile getFile() {
+		return this.file;
+	}
 
-  public void setFile(RandomAccessFile file) throws IOException {
-    this.file = file;
+	public void setFile(RandomAccessFile file) throws IOException {
+		this.file = file;
 
-    if (this.file.length() < 16) {
-      file.writeLong(-1);
-      file.writeLong(-1);
-    }
+		if (this.file.length() < 16) {
+			file.writeLong(-1);
+			file.writeLong(-1);
+		}
 
-    this.file.seek(0);
-  }
+		this.file.seek(0);
+	}
 
-  private void setFile() throws IOException {
-    this.setFile(new RandomAccessFile(this.filePath, "rw"));
-  }
+	private void setFile() throws IOException {
+		this.setFile(new RandomAccessFile(this.filePath, "rw"));
+	}
 
 	// root
 	public long getRoot() throws IOException {
@@ -74,9 +74,9 @@ public class BPlusTree<T extends Register> implements IndexStrategy<T> {
 	}
 
 	// constructor
-	public BPlusTree(int order, String filePath) throws Exception {
+	public BPlusTree(int order) throws Exception {
 		this.setOrder(order);
-		this.setFilePath(filePath);
+		this.setFilePath();
 
 		this.setFile();
 	}
