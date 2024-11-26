@@ -1,0 +1,19 @@
+.root {
+  -fx-background-color: #2C2C2C;
+}
+
+.file-chooser-label {
+  -fx-font-size: 14px;
+  -fx-text-fill: #ffffff;
+}
+
+.file-chooser-button {
+  -fx-background-color: #60CDFF;
+  -fx-font-size: 14px;
+  -fx-padding: 8px 12px;
+  -fx-text-fill: black;
+}
+
+.file-chooser-button:hover {
+  -fx-opacity: 0.9;
+}
