@@ -26,16 +26,19 @@ The dataset used in the projects is available at [Kaggle](https://www.kaggle.com
 
 ## TPs
 The projects are divided into the following TPs:
-- [TP 01](tp01): Creation of a database, manipulation of a sequential file and external sorting
+- [TP 01](tps.md#trabalho-prático-1): Creation of a database, manipulation of a sequential file and external sorting
 
 	Presentation video on [YouTube](https://www.youtube.com/watch?v=ulDujdI2U3I).
 
-- [TP 02](tp02): File Indexing Manipulation with B+ Tree, Hash and Inverted List
+- [TP 02](tps.md#trabalho-prático-2): File Indexing Manipulation with B+ Tree, Hash and Inverted List
 
 	Presentation video on [YouTube](https://www.youtube.com/watch?v=a_AgYJ3VfkE).
 
-- [TP 03](tp03): Huffman and LZW compression
-- [TP 04](tp04): Pattern Matching and Cryptography
+- [TP 03](tps.md#trabalho-prático-3): Huffman and LZW compression and Pattern Matching
+
+	Presentation video on [YouTube](https://www.youtube.com/watch?v=P-rH3ewdkAw).
+
+- [TP 04](tps.md#trabalho-prático-4): Cryptography
 
 ## Authors
 - [André Luís](https://github.com/andreeluis)
