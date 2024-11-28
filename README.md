@@ -40,6 +40,9 @@ The projects are divided into the following TPs:
 
 - [TP 04](tps.md#trabalho-prático-4): Cryptography
 
+## Documentation
+The documentation of the projects is available in the [`docs`](docs) folder.
+
 ## Authors
 - [André Luís](https://github.com/andreeluis)
 - [Rodrigo Marques](https://github.com/rodrigomsrocha)
