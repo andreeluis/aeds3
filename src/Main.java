@@ -25,11 +25,10 @@ public class Main extends Application {
     FXMLLoader loader = new FXMLLoader(getClass().getResource("view/main.fxml"));
 
     List<BaseIndexStrategy<Movie>> indexes = new ArrayList<>();
-    indexes.add(new BPlusTree<Movie>(10, dbPath));
-    indexes.add(new ExtendedHash<>(10, dbPath));
-    indexes.add(new InvertedIndex<Movie>(dbPath, "Title", Movie::getTitle));
-    // indexes.add(new InvertedIndex<Movie>(dbPath, "Description",
-    // Movie::getMovieInfo));
+    indexes.add(new BPlusTree<Movie>(10));
+    indexes.add(new ExtendedHash<>(10));
+    indexes.add(new InvertedIndex<Movie>("Title", Movie::getTitle));
+    //indexes.add(new InvertedIndex<Movie>("Description", Movie::getMovieInfo));
 
     AppController<Movie> movieControler = new AppController<>(Movie.class.getConstructor(), indexes);
     MovieMenuFactory movieMenuFactory = new MovieMenuFactory();
