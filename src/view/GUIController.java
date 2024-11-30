@@ -4,12 +4,14 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import controller.AppController;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
@@ -44,7 +46,6 @@ public class GUIController<T extends Register> implements Initializable {
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    root.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
     root.getStyleClass().add("root");
     main.setAlignment(Pos.CENTER);
 
@@ -86,14 +87,14 @@ public class GUIController<T extends Register> implements Initializable {
     Button exitButton = new Button("0 - Sair");
 
     // Configura eventos para cada botão
-    loadCsvButton.setOnAction(e -> loadCsv());
-    addRegisterButton.setOnAction(e -> addRegister());
-    searchRegisterButton.setOnAction(e -> searchRegister());
-    updateRegisterButton.setOnAction(e -> updateRegister());
-    deleteRegisterButton.setOnAction(e -> deleteRegister());
-    sortRegistersButton.setOnAction(e -> sortRegisters());
-    configureIndexesButton.setOnAction(e -> configureIndexes());
-    exitButton.setOnAction(e -> System.exit(0));
+    loadCsvButton.setOnAction(_ -> loadCsv());
+    addRegisterButton.setOnAction(_ -> addRegister());
+    searchRegisterButton.setOnAction(_ -> searchRegister());
+    updateRegisterButton.setOnAction(_ -> updateRegister());
+    deleteRegisterButton.setOnAction(_ -> deleteRegister());
+    sortRegistersButton.setOnAction(_ -> sortRegisters());
+    configureIndexesButton.setOnAction(_ -> configureIndexes());
+    exitButton.setOnAction(_ -> System.exit(0));
 
     // Adiciona os botões ao layout
     VBox menuBox = new VBox(10, loadCsvButton, addRegisterButton, searchRegisterButton,
@@ -128,8 +129,48 @@ public class GUIController<T extends Register> implements Initializable {
   }
 
   private void deleteRegister() {
-    // Lógica para excluir um registro
-    System.out.println("Excluir registro");
+    // Criação do modal para perguntar o ID do registro a ser deletado
+    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+    alert.setTitle("Excluir Registro");
+    alert.setHeaderText("Digite o ID do registro que deseja excluir:");
+
+    // Adiciona um campo de texto ao modal
+    TextField idField = new TextField();
+    idField.setPromptText("ID do registro");
+
+    VBox content = new VBox(10, new Label("ID:"), idField);
+    content.setAlignment(Pos.CENTER);
+
+    alert.getDialogPane().setContent(content);
+
+    // Configuração dos botões do modal
+    Button deleteButton = (Button) alert.getDialogPane().lookupButton(ButtonType.OK);
+    deleteButton.setText("Excluir");
+
+    alert.setResultConverter(dialogButton -> {
+      if (dialogButton == ButtonType.OK) {
+        return ButtonType.OK;
+      }
+      return null;
+    });
+
+    // Mostrar o modal e capturar o resultado
+    alert.showAndWait().ifPresent(buttonType -> {
+      if (buttonType == ButtonType.OK) {
+        String idText = idField.getText();
+        try {
+          int id = Integer.parseInt(idText.trim());
+          Optional<T> result = dbControler.deleteRegister(id);
+          if (result.isPresent()) {
+            showInfo("Registro excluído com sucesso.");
+          } else {
+            showError("Registro com ID " + id + " não encontrado.");
+          }
+        } catch (NumberFormatException e) {
+          showError("Por favor, insira um ID válido.");
+        }
+      }
+    });
   }
 
   private void sortRegisters() {
@@ -213,7 +254,7 @@ public class GUIController<T extends Register> implements Initializable {
       }
     });
 
-    backButton.setOnAction(event -> showMenu());
+    backButton.setOnAction(_ -> showMenu());
 
     // Adicionar à tela principal
     main.getChildren().add(searchBox);
@@ -225,6 +266,17 @@ public class GUIController<T extends Register> implements Initializable {
   private void showError(String message) {
     Alert alert = new Alert(Alert.AlertType.ERROR);
     alert.setTitle("Erro");
+    alert.setHeaderText(null);
+    alert.setContentText(message);
+    alert.showAndWait();
+  }
+
+  /**
+   * Exibe uma mensagem informativa em um alerta.
+   */
+  private void showInfo(String message) {
+    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    alert.setTitle("Informação");
     alert.setHeaderText(null);
     alert.setContentText(message);
     alert.showAndWait();
