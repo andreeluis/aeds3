@@ -64,6 +64,7 @@ public class GUIController<T extends Register> implements Initializable {
     fileChooserButton.setText("Carregar arquivo CSV");
 
     FileChooser fileChooser = new FileChooser();
+    fileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
     fileChooser.setTitle(entityName);
 
     fileChooserButton.setOnAction(_ -> {
@@ -113,8 +114,8 @@ public class GUIController<T extends Register> implements Initializable {
 
     // Adiciona os botões ao layout
     VBox menuBox = new VBox(10, searchRegisterButton,
-        updateRegisterButton, deleteRegisterButton, sortRegistersButton, exitButton, compressFileButton,
-        decompressFileButton);
+        updateRegisterButton, deleteRegisterButton, sortRegistersButton, compressFileButton,
+        decompressFileButton, exitButton);
     menuBox.setAlignment(Pos.CENTER);
 
     main.getChildren().add(menuBox);
@@ -517,11 +518,165 @@ public class GUIController<T extends Register> implements Initializable {
   }
 
   private void compressFile() {
+    // Limpa a tela atual
+    main.getChildren().clear();
 
+    // Título da página
+    Label titleLabel = new Label("Comprimir Arquivo");
+    titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+
+    // Campo para mostrar o caminho do arquivo selecionado
+    TextField filePathField = new TextField();
+    filePathField.setPromptText("Selecione um arquivo .aeds3 para comprimir");
+    filePathField.setPrefWidth(400);
+    filePathField.setEditable(false);
+
+    // Botão para abrir o seletor de arquivos
+    Button fileChooserButton = new Button("Selecionar Arquivo");
+    fileChooserButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+    fileChooserButton.setCursor(javafx.scene.Cursor.HAND);
+
+    // Botão para iniciar a compressão
+    Button compressButton = new Button("Comprimir");
+    compressButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+    compressButton.setCursor(javafx.scene.Cursor.HAND);
+
+    // Botão para voltar
+    Button backButton = new Button("Voltar");
+    backButton.setOnAction(_ -> showMenu());
+
+    // Layout para os botões
+    HBox buttonBox = new HBox(10, fileChooserButton, compressButton, backButton);
+    buttonBox.setAlignment(Pos.CENTER);
+
+    VBox compressBox = new VBox(20, titleLabel, filePathField, buttonBox);
+    compressBox.setAlignment(Pos.CENTER);
+    compressBox.setPadding(new Insets(20));
+
+    main.getChildren().add(compressBox);
+
+    // Configurar o seletor de arquivos
+    FileChooser fileChooser = new FileChooser();
+    fileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos AEDS3", "*.aeds3"));
+
+    // Ação do botão de seleção de arquivos
+    fileChooserButton.setOnAction(_ -> {
+      File selectedFile = fileChooser.showOpenDialog(null);
+      if (selectedFile != null) {
+        filePathField.setText(selectedFile.getAbsolutePath());
+      }
+    });
+
+    // Ação do botão de compressão
+    compressButton.setOnAction(_ -> {
+      String filePath = filePathField.getText().trim();
+      if (filePath.isEmpty()) {
+        showError("Por favor, selecione um arquivo .aeds3 para comprimir.");
+        return;
+      }
+
+      try {
+        Optional<List<CompressionStats>> stats = dbControler.compressFile(filePath);
+
+        if (stats.isPresent()) {
+          for (CompressionStats stat : stats.get()) {
+            // Área para exibir os status de compressão
+            Label statusLabel = new Label();
+            statusLabel.setStyle("-fx-font-size: 14px;");
+            statusLabel.setText(
+                "Arquivo comprimido com sucesso!\n" +
+                    "Nome: " + stat.getName() + "\n" +
+                    "Tamanho original: " + stat.getOriginalSize() + " bytes\n" +
+                    "Tamanho comprimido: " + stat.getCompressedSize() + " bytes\n" +
+                    "Tempo de execução: " + stat.getTimeTaken() + " ms\n" +
+                    "Taxa de compressão: " + stat.getCompressionRatio() * 100 + "%\n");
+
+            compressBox.getChildren().add(statusLabel);
+          }
+        }
+      } catch (Exception e) {
+        showError("Erro ao comprimir o arquivo: " + e.getMessage());
+      }
+    });
   }
 
   private void decompressFile() {
+    // Limpa a tela atual
+    main.getChildren().clear();
 
+    // Título da página
+    Label titleLabel = new Label("Descomprimir Arquivo");
+    titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+
+    Label statusLabel = new Label();
+    statusLabel.setStyle("-fx-font-size: 14px;");
+
+    // Campo para mostrar o caminho do arquivo selecionado
+    TextField filePathField = new TextField();
+    filePathField.setPromptText("Selecione um arquivo .aeds3 para descomprimir");
+    filePathField.setPrefWidth(400);
+    filePathField.setEditable(false);
+
+    // Botão para abrir o seletor de arquivos
+    Button fileChooserButton = new Button("Selecionar Arquivo");
+    fileChooserButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+    fileChooserButton.setCursor(javafx.scene.Cursor.HAND);
+
+    // Botão para iniciar a compressão
+    Button decompressButton = new Button("Descomprimir");
+    decompressButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+    decompressButton.setCursor(javafx.scene.Cursor.HAND);
+
+    // Botão para voltar
+    Button backButton = new Button("Voltar");
+    backButton.setOnAction(_ -> showMenu());
+
+    // Layout para os botões
+    HBox buttonBox = new HBox(10, fileChooserButton, decompressButton, backButton);
+    buttonBox.setAlignment(Pos.CENTER);
+
+    VBox decompressBox = new VBox(20, titleLabel, filePathField, buttonBox, statusLabel);
+    decompressBox.setAlignment(Pos.CENTER);
+    decompressBox.setPadding(new Insets(20));
+
+    main.getChildren().add(decompressBox);
+
+    // Configurar o seletor de arquivos
+    FileChooser fileChooser = new FileChooser();
+    fileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos AEDS3", "*.aeds3"));
+
+    // Ação do botão de seleção de arquivos
+    fileChooserButton.setOnAction(_ -> {
+      File selectedFile = fileChooser.showOpenDialog(null);
+      if (selectedFile != null) {
+        filePathField.setText(selectedFile.getAbsolutePath());
+      }
+    });
+
+    // Ação do botão de compressão
+    decompressButton.setOnAction(_ -> {
+      String filePath = filePathField.getText().trim();
+      if (filePath.isEmpty()) {
+        showError("Por favor, selecione um arquivo .aeds3 para descomprimir.");
+        return;
+      }
+
+      try {
+        Optional<CompressionStats> stats = dbControler.decompressFile(filePath);
+
+        if (stats.isPresent()) {
+          statusLabel.setText(
+              "Arquivo descomprimido com sucesso!\n" +
+                  "Nome: " + stats.get().getName() + "\n" +
+                  "Tempo de execução: " + stats.get().getTimeTaken() + " ms\n");
+
+        }
+      } catch (Exception e) {
+        showError("Erro ao descomprimir o arquivo: " + e.getMessage());
+      }
+    });
   }
 
   /**
