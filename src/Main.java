@@ -18,8 +18,6 @@ import view.GUIController;
 import view.Menu;
 
 public class Main extends Application {
-  private static String dbPath = "./db/";
-
   @Override
   public void start(Stage primaryStage) throws Exception {
     FXMLLoader loader = new FXMLLoader(getClass().getResource("view/main.fxml"));

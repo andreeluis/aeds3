@@ -41,6 +41,8 @@ public class Menu<T extends Register> {
 		System.out.println("  8 - Comprimir arquivo");
 		System.out.println("  9 - Descomprimir arquivo");
 		System.out.println("  10 - Buscar padrão");
+		System.out.println("  11 - Criptografar arquivo");
+		System.out.println("  12 - Descriptografar arquivo");
 
 		System.out.println("  0 - Sair");
 
@@ -87,6 +89,12 @@ public class Menu<T extends Register> {
 					break;
 				case 10:
 					searchPattern();
+					break;
+				case 11:
+					encrypt();
+					break;
+				case 12:
+					decrypt();
 					break;
 				case 0:
 					return;
@@ -272,7 +280,7 @@ public class Menu<T extends Register> {
 
 	private void decompress() {
 		// List of all supported extensions to decompress
-		Optional<List<String>> supportedExtensions = controler.getSupportedExtensions();
+		Optional<List<String>> supportedExtensions = controler.getCompressionSupportedExtensions();
 
 		// early return
 		if (supportedExtensions.isEmpty()) {
@@ -320,13 +328,74 @@ public class Menu<T extends Register> {
 
 		if (registers.isPresent()) {
 			System.out.println(entityName + "s encontrados(as):");
-			
+
 			for (T register : registers.get()) {
 				System.out.println(register);
 			}
 		} else {
 			System.out.println("Nenhum(a) " + entityName.toLowerCase() + " foi encontrado(a).");
 		}
+	}
+
+	private void encrypt() {
+		// List of all files
+		Optional<List<String>> files = FileUtil.getAllFiles();
+
+		// early return
+		if (files.isEmpty()) {
+			System.out.println("Nenhum arquivo encontrado para codificação.");
+			return;
+		}
+
+		System.out.println("Qual arquivo deseja codificar?");
+		for (int i = 0; i < files.get().size(); i++) {
+			System.out.println("  " + (i + 1) + " - " + files.get().get(i));
+		}
+
+		System.out.print("Selecione a opção desejada: ");
+		int select = scanner.nextInt();
+		scanner.nextLine(); // Limpa o buffer
+
+		String fileName = files.get().get(select - 1);
+
+		// encrypt file
+		controler.encryptFile(ConfigUtil.DB_PATH + fileName);
+
+		System.out.println("Arquivo codificado com sucesso!");
+	}
+
+	private void decrypt() {
+		// List of all supported extensions to decrypt
+		Optional<List<String>> supportedExtensions = controler.getCryptographySupportedExtensions();
+
+		// early return
+		if (supportedExtensions.isEmpty()) {
+			System.out.println("Nenhum algoritmo de decodificação disponível.");
+			return;
+		}
+
+		// List of all files
+		Optional<List<String>> files = FileUtil.getAllFiles(supportedExtensions.get());
+
+		// early return
+		if (files.isEmpty()) {
+			System.out.println("Nenhum arquivo encontrado para decodificação.");
+			return;
+		}
+
+		System.out.println("Qual arquivo deseja decodificar?");
+		for (int i = 0; i < files.get().size(); i++) {
+			System.out.println("  " + (i + 1) + " - " + files.get().get(i));
+		}
+
+		System.out.print("Selecione a opção desejada: ");
+		int select = scanner.nextInt();
+		scanner.nextLine(); // Limpa o buffer
+
+		String fileName = files.get().get(select - 1);
+
+		// decrypt file
+		controler.decryptFile(ConfigUtil.DB_PATH + fileName);
 	}
 
 	private static void clearTerminal() {

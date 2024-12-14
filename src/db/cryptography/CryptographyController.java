@@ -13,7 +13,11 @@ public class CryptographyController {
 	private List<Cryptography> cryptographies;
 
 	public CryptographyController() {
-
+		try {
+			cryptographies = List.of(new RSA());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public Optional<List<String>> getSupportedExtensions() {
@@ -34,11 +38,7 @@ public class CryptographyController {
 	 */
 	public void encrypt(String filePath) {
 		for (Cryptography cryptography : cryptographies) {
-			String extension = cryptography.getExtension();
-
-			if (filePath.endsWith(extension)) {
-				encrypt(filePath, cryptography);
-			}
+			encrypt(filePath, cryptography);
 		}
 	}
 

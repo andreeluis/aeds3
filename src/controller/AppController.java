@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import db.Database;
 import db.compression.CompressionController;
+import db.cryptography.CryptographyController;
 import db.index.IndexController;
 import db.pattern.PatternController;
 import db.sort.Sort;
@@ -26,6 +27,7 @@ public class AppController<T extends Register> {
   private IndexController<T> index;
 	private CompressionController compression;
 	private PatternController pattern;
+  private CryptographyController cryptography;
 
   public AppController(Constructor<T> constructor, List<BaseIndexStrategy<T>> indexes) throws FileNotFoundException {
     this.database = new Database<>(constructor);
@@ -37,6 +39,8 @@ public class AppController<T extends Register> {
     this.index = new IndexController<>(indexes, this.database, this.constructor);
 		this.compression = new CompressionController();
 		this.pattern = new PatternController();
+
+    this.cryptography = new CryptographyController();
   }
 
   public void readFromCSV(String csvPath) {
@@ -163,7 +167,7 @@ public class AppController<T extends Register> {
 		return this.compression.decompress(filePath);
 	}
 
-	public Optional<List<String>> getSupportedExtensions() {
+	public Optional<List<String>> getCompressionSupportedExtensions() {
 		return this.compression.getSupportedExtensions();
 	}
 
@@ -191,4 +195,17 @@ public class AppController<T extends Register> {
 
 		return Optional.empty();
 	}
+
+  // cryptography
+	public void encryptFile(String filePath) {
+    this.cryptography.encrypt(filePath);
+	}
+
+	public void decryptFile(String filePath) {
+    this.cryptography.decrypt(filePath);
+	}
+
+	public Optional<List<String>> getCryptographySupportedExtensions() {
+    return this.cryptography.getSupportedExtensions();
+	} 
 }
